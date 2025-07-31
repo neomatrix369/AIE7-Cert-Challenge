@@ -52,7 +52,6 @@ Why Single Agent Works:
 Is the complains dataset at https://github.com/neomatrix369/AIE7/blob/s09-assignment/09_Advanced_Retrieval/data/complaints.csv sufficient?
 
 **✅ Deliverables**
-
 1. Describe all of your data sources and external APIs, and describe what you’ll use them for.
 2. Describe the default chunking strategy that you will use.  Why did you make this decision?
 3. [Optional] Will you need specific data for any other part of your application?   If so, explain.
