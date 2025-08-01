@@ -75,6 +75,7 @@ _[TBC once experiments are complete]_
 **✅ Deliverables**
 1. Describe the retrieval techniques that you plan to try and to assess in your application. Write one sentence on why you believe each technique will be useful for your use case.
 _[TBC once experiments are complete]_
+Use the outcomes of the HW09 as justification on which method is use and why?
 
 2. Test a host of advanced retrieval techniques on your application.
 _[TBC once experiments are complete]_
