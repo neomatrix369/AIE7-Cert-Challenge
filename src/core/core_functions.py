@@ -25,12 +25,14 @@ from langchain_core.documents import Document
 
 # Set up logging with third-party noise suppression
 from src.utils.logging_config import setup_logging
+
 logger = setup_logging(__name__)
 
 load_dotenv(dotenv_path="../../.env")
 
-DATA_FOLDER = os.getenv('DATA_FOLDER')
+DATA_FOLDER = os.getenv("DATA_FOLDER")
 DEFAULT_FOLDER_LOCATION = "../data/"
+
 
 def check_if_env_var_is_set(env_var_name: str, human_readable_string: str = "API Key"):
     api_key = os.getenv(env_var_name)
@@ -46,6 +48,7 @@ def check_if_env_var_is_set(env_var_name: str, human_readable_string: str = "API
 
 check_if_env_var_is_set("OPENAI_API_KEY", "OpenAI API key")
 check_if_env_var_is_set("COHERE_API_KEY", "Cohere API key")
+
 
 #
 # ### Data Preparation
@@ -128,9 +131,10 @@ def load_and_prepare_csv_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
     return filtered_docs.copy()
 
 
-
 def split_documents(documents):
-    logger.info(f"📄 Splitting {len(documents)} documents into chunks (size=750, overlap=100)")
+    logger.info(
+        f"📄 Splitting {len(documents)} documents into chunks (size=750, overlap=100)"
+    )
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
     split_docs = text_splitter.split_documents(documents)
     logger.info(f"✅ Created {len(split_docs)} document chunks")
@@ -210,7 +214,9 @@ llm = ChatOpenAI(model="gpt-4.1-nano")
 
 
 def generate(state):
-    logger.info(f"🤖 Generating response using {len(state['context'])} context documents")
+    logger.info(
+        f"🤖 Generating response using {len(state['context'])} context documents"
+    )
     docs_content = "\n\n".join(doc.page_content for doc in state["context"])
     messages = rag_prompt.format_messages(
         question=state["question"], context=docs_content
