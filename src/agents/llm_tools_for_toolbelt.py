@@ -1,11 +1,16 @@
+import logging
 from langchain_core.tools import tool
-from graph_rag_functions import (
+from src.core.graph_rag_functions import (
     naive_graph,
     contextual_compression_graph,
     multi_query_graph,
     parent_document_graph,
 )
 from langchain_core.messages import HumanMessage
+
+# Set up logging with third-party noise suppression
+from src.utils.logging_config import setup_logging
+logger = setup_logging(__name__)
 
 
 @tool
@@ -31,7 +36,9 @@ def ask_naive_llm_tool(question: str):
 
     Use this BEFORE searching external sources - it has the most complete information!
     """
+    logger.info(f"🔍 [Naive Tool] Processing question: {question[:100]}...")
     response = naive_graph.invoke({"question": question})
+    logger.info(f"✅ [Naive Tool] Generated response with {len(response['context'])} contexts")
     return {
         "messages": [HumanMessage(content=response["response"])],
         "context": response["context"],
@@ -59,7 +66,9 @@ def ask_contextual_compression_llm_tool(question: str):
 
     Preferred for complex inquiries requiring the most accurate information!
     """
+    logger.info(f"🔍 [Contextual Compression Tool] Processing question: {question[:100]}...")
     response = contextual_compression_graph.invoke({"question": question})
+    logger.info(f"✅ [Contextual Compression Tool] Generated response with {len(response['context'])} reranked contexts")
     return {
         "messages": [HumanMessage(content=response["response"])],
         "context": response["context"],
@@ -87,7 +96,9 @@ def ask_multi_query_llm_tool(question: str):
 
     Use when you need the most complete possible answer to complex questions!
     """
+    logger.info(f"🔍 [Multi-Query Tool] Processing question: {question[:100]}...")
     response = multi_query_graph.invoke({"question": question})
+    logger.info(f"✅ [Multi-Query Tool] Generated response with {len(response['context'])} contexts from expanded queries")
     return {
         "messages": [HumanMessage(content=response["response"])],
         "context": response["context"],
@@ -115,7 +126,9 @@ def ask_parent_document_llm_tool(question: str):
 
     THE BEST CHOICE for accurate, comprehensive student loan assistance!
     """
+    logger.info(f"🔍 [Parent Document Tool] Processing question: {question[:100]}...")
     response = parent_document_graph.invoke({"question": question})
+    logger.info(f"✅ [Parent Document Tool] Generated response with {len(response['context'])} full document contexts")
     return {
         "messages": [HumanMessage(content=response["response"])],
         "context": response["context"],
