@@ -1,7 +1,9 @@
-from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
-
+from langchain_community.vectorstores import Qdrant
+from qdrant_client import QdrantClient, models
 from langchain_qdrant import QdrantVectorStore
+from langchain_openai import OpenAIEmbeddings
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_openai import ChatOpenAI
 from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
@@ -172,16 +174,16 @@ from langchain.retrievers import ParentDocumentRetriever
 from langchain.storage import InMemoryStore
 
 parent_docs = student_loan_docs_dataset.copy()
-child_splitter = RecursiveCharacterTextSplitter(chunk_size=512, overlap=50)
+child_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
 
-vectorstore.client.create_collection(
+vector_store.client.create_collection(
     collection_name="full_documents",
     vectors_config=models.VectorParams(size=1536, distance=models.Distance.COSINE),
 )
 
 parent_document_vectorstore = Qdrant(
-    client=vectorstore.client,  # ✅ Reuse existing client
-    embeddings=small_embeddings,  # ✅ Reuse embeddings
+    client=vector_store.client,  # ✅ Reuse existing client
+    embeddings=embeddings,  # ✅ Reuse embeddings
     collection_name="full_documents",
 )
 
