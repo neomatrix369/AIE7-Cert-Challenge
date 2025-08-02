@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Federal Student Loan Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .message-content {
+            white-space: pre-wrap;
+        }
+        .loading-dots {
+            animation: loading 1.4s infinite ease-in-out both;
+        }
+        .loading-dots:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes loading {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white p-4 shadow-md">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <svg class="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
+                <h1 class="text-xl font-semibold">Federal Student Loan Assistant</h1>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div id="apiStatus" class="flex items-center space-x-1 text-gray-200">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-sm">Checking...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Chat Messages -->
+    <div class="flex-1 max-w-4xl mx-auto w-full p-4">
+        <div id="messagesContainer" class="space-y-4 mb-4">
+            <!-- Initial welcome message -->
+            <div class="flex justify-start">
+                <div class="bg-white text-gray-800 shadow-md border rounded-lg p-4 max-w-3xl">
+                    <div class="message-content">Hello! I'm your Federal Student Loan Assistant. I can help answer questions about federal student loan policies, procedures, and common issues. What would you like to know?</div>
+                    <div class="flex items-center justify-between mt-2 text-xs text-gray-500">
+                        <span id="welcomeTime"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="border-t bg-white p-4">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex space-x-4">
+                <textarea
+                    id="messageInput"
+                    placeholder="Ask me anything about federal student loans..."
+                    class="flex-1 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    rows="2"
+                ></textarea>
+                <button
+                    id="sendButton"
+                    class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                    <span>Send</span>
+                </button>
+            </div>
+            <div class="mt-2 text-xs text-gray-500">
+                Press Enter to send, Shift+Enter for new line
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application state
+        let isLoading = false;
+        let apiStatus = 'unknown';
+        let backendUrl = 'http://localhost:8000'; // Default for local development
+
+        // Auto-detect backend URL in Docker environment
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            // In Docker container, try to use the service name
+            backendUrl = 'http://rag-api:8000';
+        }
+
+        // DOM elements
+        const messagesContainer = document.getElementById('messagesContainer');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const apiStatusElement = document.getElementById('apiStatus');
+        const welcomeTimeElement = document.getElementById('welcomeTime');
+
+        // Set welcome message time
+        welcomeTimeElement.textContent = new Date().toLocaleTimeString();
+
+        // Check API health on page load
+        checkApiHealth();
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keydown', handleKeyPress);
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        async function checkApiHealth() {
+            try {
+                const response = await fetch(`${backendUrl}/health`);
+                const data = await response.json();
+                apiStatus = data.status === 'healthy' ? 'healthy' : 'unhealthy';
+                updateApiStatus();
+            } catch (error) {
+                // If Docker service name fails, try localhost as fallback
+                if (backendUrl !== 'http://localhost:8000') {
+                    backendUrl = 'http://localhost:8000';
+                    try {
+                        const fallbackResponse = await fetch(`${backendUrl}/health`);
+                        const fallbackData = await fallbackResponse.json();
+                        apiStatus = fallbackData.status === 'healthy' ? 'healthy' : 'unhealthy';
+                        updateApiStatus();
+                        return;
+                    } catch (fallbackError) {
+                        // Both failed
+                    }
+                }
+                apiStatus = 'unhealthy';
+                updateApiStatus();
+            }
+        }
+
+        function updateApiStatus() {
+            if (apiStatus === 'healthy') {
+                apiStatusElement.innerHTML = `
+                    <svg class="h-4 w-4 text-green-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-sm text-green-200">Online</span>
+                `;
+            } else {
+                apiStatusElement.innerHTML = `
+                    <svg class="h-4 w-4 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-sm text-red-200">Offline</span>
+                `;
+            }
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message || isLoading) return;
+
+            // Add user message
+            addMessage(message, true);
+            messageInput.value = '';
+            setLoading(true);
+
+            try {
+                const response = await fetch(`${backendUrl}/ask`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: message,
+                        max_response_length: 2000
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Add bot response
+                addMessage(data.answer, false, {
+                    sources: data.sources_count,
+                    processingTime: data.performance_metrics?.total_processing_time 
+                        ? data.performance_metrics.total_processing_time.toFixed(2) + 's'
+                        : undefined
+                });
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage(`Sorry, I encountered an error while processing your question. Please make sure the backend API is running at ${backendUrl} and try again.`, false);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function addMessage(content, isUser, metadata = {}) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+
+            const bubbleClass = isUser 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-white text-gray-800 shadow-md border';
+
+            let metadataHtml = '';
+            if (!isUser && (metadata.sources || metadata.processingTime)) {
+                metadataHtml = `
+                    <div class="flex items-center space-x-3">
+                        ${metadata.sources ? `<span>📚 ${metadata.sources} sources</span>` : ''}
+                        ${metadata.processingTime ? `
+                            <span class="flex items-center space-x-1">
+                                <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span>${metadata.processingTime}</span>
+                            </span>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            messageDiv.innerHTML = `
+                <div class="max-w-3xl rounded-lg p-4 ${bubbleClass}">
+                    <div class="message-content">${content}</div>
+                    <div class="flex items-center justify-between mt-2 text-xs opacity-70">
+                        <span>${new Date().toLocaleTimeString()}</span>
+                        ${metadataHtml}
+                    </div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function setLoading(loading) {
+            isLoading = loading;
+            sendButton.disabled = loading;
+            messageInput.disabled = loading;
+
+            if (loading) {
+                showLoadingMessage();
+            } else {
+                hideLoadingMessage();
+            }
+        }
+
+        function showLoadingMessage() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loadingMessage';
+            loadingDiv.className = 'flex justify-start';
+            loadingDiv.innerHTML = `
+                <div class="bg-white text-gray-800 shadow-md border rounded-lg p-4 max-w-3xl">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-blue-600 rounded-full loading-dots"></div>
+                            <div class="w-2 h-2 bg-blue-600 rounded-full loading-dots"></div>
+                            <div class="w-2 h-2 bg-blue-600 rounded-full loading-dots"></div>
+                        </div>
+                        <span>Searching through federal student loan knowledge base...</span>
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(loadingDiv);
+            scrollToBottom();
+        }
+
+        function hideLoadingMessage() {
+            const loadingMessage = document.getElementById('loadingMessage');
+            if (loadingMessage) {
+                loadingMessage.remove();
+            }
+        }
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                window.scrollTo(0, document.body.scrollHeight);
+            }, 100);
+        }
+    </script>
+</body>
+</html>

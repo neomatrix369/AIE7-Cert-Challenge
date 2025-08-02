@@ -17,6 +17,7 @@ from src.tools.tavily_tools import (
 
 # Set up logging with third-party noise suppression
 from src.utils.logging_config import setup_logging
+
 logger = setup_logging(__name__)
 
 tavily_tool = TavilySearchResults(max_results=5)
@@ -28,7 +29,7 @@ class AgentState(TypedDict):
 
 def should_continue(state):
     last_message = state["messages"][-1]
-    
+
     if last_message.tool_calls:
         logger.info(f"🔧 Agent requesting {len(last_message.tool_calls)} tool calls")
         return "action"
@@ -38,7 +39,9 @@ def should_continue(state):
 
 
 def get_graph_agent(additional_tools: list):
-    logger.info(f"🤖 Creating graph agent with {len(additional_tools)} additional tools")
+    logger.info(
+        f"🤖 Creating graph agent with {len(additional_tools)} additional tools"
+    )
     model = ChatOpenAI(
         model="gpt-4.1-nano",
         temperature=0,  # Lower temperature for more consistent outputs
@@ -49,7 +52,9 @@ def get_graph_agent(additional_tools: list):
         logger.info(f"🧠 LLM processing {len(state['messages'])} messages")
         messages = state["messages"]
         response = model.invoke(messages)
-        logger.info(f"📝 LLM generated response with {len(response.content) if hasattr(response, 'content') else 0} characters")
+        logger.info(
+            f"📝 LLM generated response with {len(response.content) if hasattr(response, 'content') else 0} characters"
+        )
         return {"messages": [response]}
 
     tool_belt = additional_tools + [
@@ -73,7 +78,7 @@ def get_graph_agent(additional_tools: list):
 
     model = model.bind_tools(tool_belt)
     tool_node = ToolNode(tool_belt)
-    
+
     logger.info(f"🔧 Agent toolbelt configured with {len(tool_belt)} total tools")
 
     uncompiled_graph = StateGraph(AgentState)

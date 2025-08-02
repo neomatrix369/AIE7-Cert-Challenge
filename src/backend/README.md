@@ -82,17 +82,27 @@ cd src/backend/
 # Build and run with Docker Compose
 docker-compose up --build
 
-# Or run in background
+# Or run in background (detached mode)
 docker-compose up --build -d
 
-# View logs
+# View logs (real-time)
 docker-compose logs -f
+
+# View logs (last 100 lines)
+docker-compose logs --tail 100
 
 # Stop the container
 docker-compose down
+
+# Stop and remove volumes (complete cleanup)
+docker-compose down -v
 ```
 
-> **Note:** The docker-compose.yml is configured to build from the project root (`../../`) to access all `src/` dependencies while running from the backend directory.
+> **Note:** The docker-compose.yml is configured to:
+> - Build from the project root (`../../`) to access all `src/` dependencies
+> - Create a shared network (`student-loan-network`) for frontend communication
+> - Mount volumes for persistent cache and live development
+> - Include health checks and auto-restart policies
 
 #### 3. Manual Docker Build and Run
 
@@ -136,6 +146,59 @@ curl http://localhost:8000/health
 curl -X POST "http://localhost:8000/ask" \
   -H "Content-Type: application/json" \
   -d '{"question": "What are income-driven repayment plans?"}'
+
+# Test with maximum response length
+curl -X POST "http://localhost:8000/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Explain federal student loan forgiveness options", "max_response_length": 1500}'
+
+# Check API information
+curl http://localhost:8000/api-info
+```
+
+### Docker Management Commands
+
+```bash
+# View running containers
+docker ps
+
+# Check container health status
+docker inspect --format='{{.State.Health.Status}}' backend_rag-api_1
+
+# Access container shell for debugging
+docker exec -it backend_rag-api_1 /bin/bash
+
+# View container resource usage
+docker stats backend_rag-api_1
+
+# Check container logs with timestamps
+docker logs -t backend_rag-api_1
+
+# Follow logs in real-time with timestamps
+docker logs -ft backend_rag-api_1
+
+# Export container logs to file
+docker logs backend_rag-api_1 > rag-api.log 2>&1
+```
+
+### Network and Volume Management
+
+```bash
+# Inspect the shared network
+docker network inspect backend_student-loan-network
+
+# List all networks
+docker network ls
+
+# Check volume usage
+docker volume ls
+docker volume inspect backend_cache_volume
+
+# Backup cache volume (optional)
+docker run --rm -v backend_cache_volume:/data -v $(pwd):/backup alpine tar czf /backup/cache-backup.tar.gz -C /data .
+
+# Restore cache volume (optional)
+docker run --rm -v backend_cache_volume:/data -v $(pwd):/backup alpine tar xzf /backup/cache-backup.tar.gz -C /data
 ```
 
 ## API Usage
@@ -304,45 +367,188 @@ docker run -d \
 ```
 
 ### Container Features
-- **Health checks:** Built-in health monitoring at `/health`
-- **Persistent cache:** Volume-mounted cache directory
-- **Read-only data:** Data directory mounted as read-only
-- **Auto-restart:** Container restarts on failure
-- **Resource limits:** Configure via Docker Compose
+- **Health checks:** Built-in health monitoring at `/health` (30s intervals)
+- **Persistent cache:** Volume-mounted cache directory for RAGAS evaluations
+- **Read-only data:** Data directory mounted as read-only for security
+- **Auto-restart:** Container restarts on failure (unless-stopped policy)
+- **Shared networking:** Creates `student-loan-network` for frontend communication
+- **Resource monitoring:** Built-in container stats and logging
+- **Development support:** Live code mounting for development
 
-For production deployment considerations:
+### Multi-Container Setup (Backend + Frontend)
 
-1. **Environment Variables:** Set in production environment or Docker secrets
-2. **Vector Store:** Consider persistent Qdrant deployment  
-3. **Rate Limiting:** Add rate limiting middleware
-4. **Authentication:** Add API key authentication if needed
-5. **CORS:** Configure CORS origins appropriately
+The backend creates a shared Docker network that the frontend can connect to:
+
+```bash
+# Start backend (creates network)
+cd src/backend/
+docker-compose up -d
+
+# Start frontend (connects to backend network)
+cd ../../frontend/
+docker-compose up --build
+```
+
+**Network Architecture:**
+```
+┌─────────────────┐    ┌──────────────────┐
+│   Frontend      │    │    Backend       │
+│  (Port 3000)    │◄──►│  (Port 8000)     │
+│                 │    │                  │
+│ Connects to:    │    │ Service Name:    │
+│ • rag-api:8000  │    │ • rag-api        │
+└─────────────────┘    └──────────────────┘
+          │                       │
+          └───────────────────────┘
+             student-loan-network
+```
+
+### Production Deployment Considerations
+
+1. **Environment Variables:** Use Docker secrets or secure env injection
+2. **Vector Store:** Consider persistent Qdrant deployment for scale
+3. **Rate Limiting:** Add rate limiting middleware for API protection
+4. **Authentication:** Implement API key authentication if needed
+5. **CORS:** Configure CORS origins for production domains
 6. **Load Balancing:** Use reverse proxy (nginx/traefik) for multiple containers
-7. **Monitoring:** Enable container monitoring and log aggregation
+7. **Monitoring:** Enable container monitoring, log aggregation, and metrics
+8. **Resource Limits:** Set CPU and memory limits in production
+9. **Security:** Run containers as non-root user, scan images for vulnerabilities
+10. **Backup:** Regular backup of cache volumes and configuration
 
 ## Troubleshooting
 
 ### Common Issues
 
-**"RAG agent is not initialized"**
-- Check environment variables are set
-- Verify .env file is in project root
-- Check OpenAI API key is valid
+**1. "RAG agent is not initialized"**
+```bash
+# Check environment variables are set
+docker exec -it backend_rag-api_1 env | grep -E "(OPENAI|COHERE|TAVILY)"
 
-**"Module not found" errors**
-- Ensure you're running from project root directory
-- Check all requirements are installed
-- Verify src/ folder structure is intact
+# Verify .env file is in project root
+ls -la ../../.env
 
-**Slow responses**
-- Normal for first request (model loading)
-- Subsequent requests should be faster
-- Check network connectivity
+# Check OpenAI API key is valid
+curl -H "Authorization: Bearer $OPENAI_API_KEY" https://api.openai.com/v1/models
+```
 
-**Empty or poor responses**
-- Verify hybrid dataset is loaded properly
-- Check question is related to student loans
-- Review logs for processing errors
+**2. "Module not found" errors**
+```bash
+# Ensure Docker build context is correct (project root)
+docker build -f src/backend/Dockerfile -t rag-api .  # From project root
+
+# Check container filesystem structure
+docker exec -it backend_rag-api_1 ls -la /app/src/
+
+# Verify requirements are installed
+docker exec -it backend_rag-api_1 pip list | grep -E "(langchain|openai|fastapi)"
+```
+
+**3. Slow responses or timeouts**
+```bash
+# Check container resource usage
+docker stats backend_rag-api_1
+
+# Monitor logs for performance issues
+docker logs -f backend_rag-api_1 | grep -E "(⏱️|Processing|seconds)"
+
+# Increase container memory limit
+# Add to docker-compose.yml:
+# deploy:
+#   resources:
+#     limits:
+#       memory: 2G
+```
+
+**4. Empty or poor responses**
+```bash
+# Check hybrid dataset loading
+docker logs backend_rag-api_1 | grep -E "(dataset|loading|Qdrant)"
+
+# Verify data volume is mounted correctly
+docker exec -it backend_rag-api_1 ls -la /app/data/
+
+# Test with simple question
+curl -X POST "http://localhost:8000/ask" \
+  -H "Content-Type: application/json" \
+  -d '{"question": "What is a federal student loan?"}'
+```
+
+**5. Docker network issues (Frontend can't reach Backend)**
+```bash
+# Check if backend network exists
+docker network ls | grep student-loan
+
+# Verify backend container is on the network
+docker network inspect backend_student-loan-network
+
+# Test network connectivity from frontend container
+docker exec -it frontend curl http://rag-api:8000/health
+```
+
+**6. Port conflicts**
+```bash
+# Check what's using port 8000
+lsof -i :8000
+
+# Use different port mapping
+docker run -p 8001:8000 rag-api
+```
+
+**7. Container health check failures**
+```bash
+# Check health status
+docker inspect --format='{{.State.Health}}' backend_rag-api_1
+
+# Manual health check
+curl -f http://localhost:8000/health
+
+# View health check logs
+docker inspect backend_rag-api_1 | jq '.[0].State.Health.Log'
+```
+
+### Performance Optimization
+
+**Resource Monitoring:**
+```bash
+# Monitor container resources in real-time
+docker stats backend_rag-api_1
+
+# Check memory usage patterns
+docker exec -it backend_rag-api_1 free -h
+
+# Monitor disk I/O for cache operations
+docker exec -it backend_rag-api_1 df -h
+```
+
+**Cache Management:**
+```bash
+# Check cache volume size
+docker volume inspect backend_cache_volume
+
+# Clear cache if needed (will regenerate)
+docker volume rm backend_cache_volume
+docker-compose down && docker-compose up --build
+
+# Monitor cache usage
+docker exec -it backend_rag-api_1 du -sh /app/cache/
+```
+
+### Log Analysis
+
+```bash
+# Filter logs by component
+docker logs backend_rag-api_1 | grep "🔍"  # RAG agent operations
+docker logs backend_rag-api_1 | grep "📝"  # Question processing
+docker logs backend_rag-api_1 | grep "⏱️"   # Performance metrics
+docker logs backend_rag-api_1 | grep "❌"   # Errors
+
+# Export logs with timestamps for analysis
+docker logs -t backend_rag-api_1 > backend-analysis.log 2>&1
+
+# Follow logs with filtering
+docker logs -f backend_rag-api_1 | grep -E "(ERROR|WARNING|📝|✅)"
+```
 
 ## Support
 

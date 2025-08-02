@@ -5,6 +5,7 @@ from typing import Optional
 
 # Set up logging with third-party noise suppression
 from src.utils.logging_config import setup_logging
+
 logger = setup_logging(__name__)
 
 
@@ -31,8 +32,10 @@ def tavily_studentaid_search(query: str) -> str:
             include_answer=True,
             include_domains=["studentaid.gov"],
         )
-        
-        logger.info(f"📚 [StudentAid Search] Found {len(response.get('results', []))} results")
+
+        logger.info(
+            f"📚 [StudentAid Search] Found {len(response.get('results', []))} results"
+        )
 
         result = f"StudentAid.gov Search Results for: {query}\n\n"
 
@@ -75,8 +78,10 @@ def tavily_mohela_search(query: str) -> str:
             include_answer=True,
             include_domains=["mohela.com", "servicing.mohela.com"],
         )
-        
-        logger.info(f"📚 [Mohela Search] Found {len(response.get('results', []))} results")
+
+        logger.info(
+            f"📚 [Mohela Search] Found {len(response.get('results', []))} results"
+        )
 
         result = f"Mohela Search Results for: {query}\n\n"
 
@@ -111,7 +116,9 @@ def tavily_student_loan_search(query: str, source: Optional[str] = None) -> str:
         Formatted search results comparing both sources
     """
     try:
-        logger.info(f"🔍 [Comprehensive Search] Searching for: {query} (source: {source or 'both'})")
+        logger.info(
+            f"🔍 [Comprehensive Search] Searching for: {query} (source: {source or 'both'})"
+        )
         client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
         if source == "studentaid":
@@ -135,8 +142,10 @@ def tavily_student_loan_search(query: str, source: Optional[str] = None) -> str:
                     "servicing.mohela.com",
                 ],
             )
-            
-            logger.info(f"📚 [Comprehensive Search] Found {len(response.get('results', []))} total results")
+
+            logger.info(
+                f"📚 [Comprehensive Search] Found {len(response.get('results', []))} total results"
+            )
 
             result = f"Comprehensive Student Loan Search Results for: {query}\n\n"
 
@@ -155,7 +164,9 @@ def tavily_student_loan_search(query: str, source: Optional[str] = None) -> str:
                     mohela_results.append(item)
 
             if studentaid_results:
-                logger.info(f"📋 [Comprehensive Search] {len(studentaid_results)} StudentAid.gov results")
+                logger.info(
+                    f"📋 [Comprehensive Search] {len(studentaid_results)} StudentAid.gov results"
+                )
                 result += "📋 Federal Government Perspective (StudentAid.gov):\n"
                 for i, item in enumerate(studentaid_results[:2], 1):
                     result += f"{i}. {item.get('title', 'No title')}\n"
@@ -163,7 +174,9 @@ def tavily_student_loan_search(query: str, source: Optional[str] = None) -> str:
                     result += f"   Source: {item.get('url', '')}\n\n"
 
             if mohela_results:
-                logger.info(f"🏢 [Comprehensive Search] {len(mohela_results)} Mohela results")
+                logger.info(
+                    f"🏢 [Comprehensive Search] {len(mohela_results)} Mohela results"
+                )
                 result += "🏢 Loan Servicer Perspective (Mohela):\n"
                 for i, item in enumerate(mohela_results[:2], 1):
                     result += f"{i}. {item.get('title', 'No title')}\n"
