@@ -20,8 +20,8 @@ from ragas.metrics import (
     NoiseSensitivity,
 )
 from ragas import evaluate, RunConfig
-from ragas_metrics import extract_ragas_metrics
-from tool_calls_parser_for_eval import (
+from src.evaluation.ragas_metrics import extract_ragas_metrics
+from src.evaluation.tool_calls_parser_for_eval import (
     extract_contexts_for_eval,
     parse_langchain_messages,
 )
@@ -110,7 +110,7 @@ def record_metrics_from_run(retriever_name, dataframe):
         "context_entity_recall",
         "noise_sensitivity_relevant",
     ]
-    metrics_filename = "ragas-evaluation-metrics.csv"
+    metrics_filename = "../metrics/ragas-evaluation-metrics.csv"
     dataset_df = pd.DataFrame()
     if os.path.exists(metrics_filename):
         dataset_df = pd.read_csv(metrics_filename)

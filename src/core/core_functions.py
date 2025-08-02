@@ -27,7 +27,7 @@ from langchain_core.documents import Document
 
 memory = Memory(location="./cache")
 
-load_dotenv(dotenv_path=".env")
+load_dotenv(dotenv_path="../../.env")
 
 
 def check_if_env_var_is_set(env_var_name: str, human_readable_string: str = "API Key"):
@@ -50,19 +50,25 @@ check_if_env_var_is_set("COHERE_API_KEY", "Cohere API key")
 # ### Data Preparation
 #
 
-def load_and_prepare_pdf_loan_docs():
+
+def load_and_prepare_pdf_loan_docs(folder: str = "../data/"):
+    print("Current working directory:", os.getcwd())
+    if not os.path.exists(folder):
+        folder = "../" + folder
     print("Loading student loan pdfs (knowledge) data...")
-    path = "data/"
-    loader = DirectoryLoader(path, glob="*.pdf", loader_cls=PyMuPDFLoader)
+    loader = DirectoryLoader(folder, glob="*.pdf", loader_cls=PyMuPDFLoader)
     docs = loader.load()
     gc.collect()
     print(f"Documents count: {len(docs)}")
     return docs
 
 
-def load_and_prepare_csv_loan_docs():
+def load_and_prepare_csv_loan_docs(folder: str = "../data/"):
+    print("Current working directory:", os.getcwd())
+    if not os.path.exists(folder):
+        folder = "../" + folder
     loader = CSVLoader(
-        file_path=f"./data/complaints.csv",
+        file_path=f"{folder}/complaints.csv",
         metadata_columns=[
             "Date received",
             "Product",
@@ -133,6 +139,7 @@ def load_and_prepare_csv_loan_docs():
 #
 #
 
+
 @memory.cache
 def generate_golden_master(original_doc, items_to_pick: int = 20, final_size: int = 10):
     generator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4.1"))
@@ -145,7 +152,6 @@ def generate_golden_master(original_doc, items_to_pick: int = 20, final_size: in
     )
     golden_master_dataset.to_pandas()
     return golden_master_dataset
-
 
 
 def split_documents(documents):
@@ -217,6 +223,7 @@ llm = ChatOpenAI(model="gpt-4.1-nano")
 
 
 # Then we can create a `generate` node!
+
 
 def generate(state):
     docs_content = "\n\n".join(doc.page_content for doc in state["context"])

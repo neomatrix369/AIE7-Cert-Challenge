@@ -1,5 +1,5 @@
 from langchain_core.tools import tool
-from graph_rag_functions import (
+from src.core.graph_rag_functions import (
     naive_graph,
     contextual_compression_graph,
     multi_query_graph,

@@ -15,12 +15,12 @@ from typing_extensions import List, TypedDict
 
 from dotenv import load_dotenv
 
-from core_functions import (
+from src.core.core_functions import (
     load_and_prepare_pdf_loan_docs,
     load_and_prepare_csv_loan_docs,
 )
 
-load_dotenv(dotenv_path=".env")
+load_dotenv(dotenv_path="../../.env")
 
 student_loan_pdf_docs_dataset = load_and_prepare_pdf_loan_docs()
 student_loan_complaint_docs_dataset = load_and_prepare_csv_loan_docs()
