@@ -24,6 +24,9 @@ cp .env.example .env
 OPENAI_API_KEY=your_openai_key_here
 COHERE_API_KEY=your_cohere_key_here
 TAVILY_API_KEY=your_tavily_key_here  # Optional
+LANGCHAIN_API_KEY=your_langsmith_key_here  # Optional, for tracing
+LANGCHAIN_TRACING_V2=true  # Optional, enables LangSmith tracing
+LANGCHAIN_PROJECT=student-loan-rag  # Optional, LangSmith project name
 ```
 
 #### 2. Install Dependencies
@@ -63,6 +66,9 @@ python test_simple_api.py
 OPENAI_API_KEY=your_openai_key_here
 COHERE_API_KEY=your_cohere_key_here
 TAVILY_API_KEY=your_tavily_key_here  # Optional
+LANGCHAIN_API_KEY=your_langsmith_key_here  # Optional, for tracing
+LANGCHAIN_TRACING_V2=true  # Optional, enables LangSmith tracing  
+LANGCHAIN_PROJECT=student-loan-rag  # Optional, LangSmith project name
 ```
 
 #### 2. Build and Run with Docker Compose (Recommended)
@@ -152,9 +158,47 @@ curl -X POST "http://localhost:8000/ask" \
   "answer": "If you can't make your student loan payments, you have several options: 1. Contact your loan servicer immediately to discuss...",
   "sources_count": 5,
   "success": true,
-  "message": "Question processed successfully"
+  "message": "Question processed successfully",
+  "source_details": [
+    "Document context 1: Federal loan policies...",
+    "Document context 2: Customer complaint about payment issues...",
+    "Document context 3: Servicer guidelines for hardship..."
+  ],
+  "tools_used": [
+    "ask_parent_document_llm_tool"
+  ],
+  "performance_metrics": {
+    "response_time_ms": 3200,
+    "retrieval_time_ms": 1920,
+    "generation_time_ms": 1280,
+    "tokens_used": 1850,
+    "input_tokens": 420,
+    "output_tokens": 1430,
+    "retrieval_method": "parent_document",
+    "total_contexts": 5
+  }
 }
 ```
+
+### Enhanced Response Fields
+
+The `/ask` endpoint returns comprehensive information about the RAG pipeline execution:
+
+- **`answer`**: Generated response text
+- **`sources_count`**: Number of knowledge sources used  
+- **`success`**: Boolean indicating success
+- **`message`**: Status message
+- **`source_details`**: Raw contexts retrieved from documents (for transparency)
+- **`tools_used`**: List of RAG tools/retrievers used in processing
+- **`performance_metrics`**: Detailed metrics object containing:
+  - `response_time_ms`: Total response time
+  - `retrieval_time_ms`: Time spent on document retrieval
+  - `generation_time_ms`: Time spent on text generation
+  - `tokens_used`: Total tokens consumed
+  - `input_tokens`: Input/prompt tokens
+  - `output_tokens`: Generated tokens
+  - `retrieval_method`: Retrieval method used
+  - `total_contexts`: Number of contexts retrieved
 
 ### Other Endpoints
 
@@ -212,8 +256,10 @@ User Question → Parent Document RAG → Hybrid Knowledge Base → AI Response
 ### Project Structure
 ```
 simple_api.py              # Main FastAPI application
-test_simple_api.py         # Test suite
-requirements-simple-api.txt # Dependencies
+test_simple_api.py         # Test suite  
+requirements.txt           # Dependencies
+Dockerfile                 # Docker container configuration
+docker-compose.yml         # Docker Compose setup
 src/                       # RAG components
 ├── core/                  # Data loading and processing
 ├── agents/                # LangGraph agents and tools  
