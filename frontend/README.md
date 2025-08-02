@@ -61,14 +61,27 @@ The frontend connects to the backend API at `http://localhost:8000/ask`. The int
 - Docker installed and running
 - Backend API accessible (either running locally or in another container)
 
-### Option 1: Full-Stack with Docker Compose (Recommended)
+### Container Discovery
 
-Deploy both frontend and backend together:
+The frontend automatically detects the backend:
+- **Local Development:** Uses `http://localhost:8000`
+- **Docker Environment:** Looks for `rag-api` container on shared network
+- **Fallback:** If container discovery fails, falls back to localhost
+
+### Option 1: Full-Stack with Enhanced Docker Script (Recommended)
+
+Deploy both frontend and backend with automatic cleanup:
 
 ```bash
-# Quick start with script
+# Quick start with enhanced script (includes cleanup & health checks)
 ./docker-start.sh
 ```
+
+The enhanced script provides:
+- **Pre-deployment cleanup** of stopped containers and dangling images
+- **Environment validation** (.env file checks)
+- **Health monitoring** and service status
+- **Post-deployment cleanup** when stopping services
 
 Or manually:
 ```bash
@@ -87,7 +100,23 @@ This will start:
 - **Backend API:** http://localhost:8000
 - **API Docs:** http://localhost:8000/docs
 
-### Option 2: Frontend Container Only
+### Option 2: Multi-Container Setup (Frontend discovers Backend)
+
+**Step 1: Start Backend First**
+```bash
+cd ../src/backend
+docker-compose up -d  # Creates the shared network
+```
+
+**Step 2: Start Frontend (connects to backend container)**
+```bash
+cd frontend
+docker-compose up --build
+```
+
+The frontend will automatically discover and connect to the `rag-api` container via Docker networking.
+
+### Option 3: Frontend Container Only
 
 Build and run just the frontend container:
 

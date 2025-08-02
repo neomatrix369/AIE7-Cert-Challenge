@@ -86,6 +86,13 @@
         // Application state
         let isLoading = false;
         let apiStatus = 'unknown';
+        let backendUrl = 'http://localhost:8000'; // Default for local development
+
+        // Auto-detect backend URL in Docker environment
+        if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            // In Docker container, try to use the service name
+            backendUrl = 'http://rag-api:8000';
+        }
 
         // DOM elements
         const messagesContainer = document.getElementById('messagesContainer');
@@ -113,11 +120,24 @@
 
         async function checkApiHealth() {
             try {
-                const response = await fetch('http://localhost:8000/health');
+                const response = await fetch(`${backendUrl}/health`);
                 const data = await response.json();
                 apiStatus = data.status === 'healthy' ? 'healthy' : 'unhealthy';
                 updateApiStatus();
             } catch (error) {
+                // If Docker service name fails, try localhost as fallback
+                if (backendUrl !== 'http://localhost:8000') {
+                    backendUrl = 'http://localhost:8000';
+                    try {
+                        const fallbackResponse = await fetch(`${backendUrl}/health`);
+                        const fallbackData = await fallbackResponse.json();
+                        apiStatus = fallbackData.status === 'healthy' ? 'healthy' : 'unhealthy';
+                        updateApiStatus();
+                        return;
+                    } catch (fallbackError) {
+                        // Both failed
+                    }
+                }
                 apiStatus = 'unhealthy';
                 updateApiStatus();
             }
@@ -151,7 +171,7 @@
             setLoading(true);
 
             try {
-                const response = await fetch('http://localhost:8000/ask', {
+                const response = await fetch(`${backendUrl}/ask`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -178,7 +198,7 @@
 
             } catch (error) {
                 console.error('Error:', error);
-                addMessage('Sorry, I encountered an error while processing your question. Please make sure the backend API is running on localhost:8000 and try again.', false);
+                addMessage(`Sorry, I encountered an error while processing your question. Please make sure the backend API is running at ${backendUrl} and try again.`, false);
             } finally {
                 setLoading(false);
             }

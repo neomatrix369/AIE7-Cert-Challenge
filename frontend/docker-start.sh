@@ -1,6 +1,23 @@
 #!/bin/bash
 
+set -e
+set -u
+set -o pipefail
 # Frontend Docker startup script for Federal Student Loan Assistant
+
+cleanup() {
+	containersToRemove=$(docker ps --quiet --filter "status=exited")
+	[ ! -z "${containersToRemove}" ] &&                                \
+	    echo "Remove any stopped container from the local registry" && \
+	    docker rm ${containersToRemove} || (true && echo "No docker processes to clean up")
+
+	imagesToRemove=$(docker images --quiet --filter "dangling=true")
+	[ ! -z "${imagesToRemove}" ] &&                                    \
+	    echo "Remove any dangling images from the local registry" &&   \
+	    docker rmi -f ${imagesToRemove} || (true && echo "No docker images to clean up")
+}
+
+cleanup
 
 echo "🏦 Federal Student Loan Assistant - Full Stack Docker Deployment"
 echo "=============================================================="
@@ -28,3 +45,5 @@ echo ""
 
 # Start the services
 docker-compose up --build
+
+cleanup
