@@ -30,7 +30,7 @@ def should_continue(state):
     return END
 
 
-def get_agent_graph(additional_tools: list):
+def get_graph_agent(additional_tools: list):
     model = ChatOpenAI(
         model="gpt-4.1-nano",
         temperature=0,  # Lower temperature for more consistent outputs
