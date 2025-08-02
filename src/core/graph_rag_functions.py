@@ -98,6 +98,8 @@ You are a helpful assistant who answers questions based on provided context. You
 
 ### Context
 {context}
+
+Return a confidence score and a reason as json for the score once finished based on the outcome of the query.
 """
 
 rag_prompt = ChatPromptTemplate.from_template(RAG_PROMPT)

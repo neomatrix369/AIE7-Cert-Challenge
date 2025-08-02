@@ -192,6 +192,8 @@ def get_rag_prompt():
 
   ### Context
   {context}
+  
+  Return a confidence score and a reason for the score once as json finished based on the outcome of the query.
   """
 
     return ChatPromptTemplate.from_template(RAG_PROMPT)
