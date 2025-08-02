@@ -16,8 +16,10 @@ from tavily_tools import (
 
 tavily_tool = TavilySearchResults(max_results=5)
 
+
 class AgentState(TypedDict):
     messages: Annotated[list, add_messages]
+
 
 def should_continue(state):
     last_message = state["messages"][-1]

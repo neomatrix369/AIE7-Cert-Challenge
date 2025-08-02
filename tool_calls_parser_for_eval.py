@@ -163,7 +163,12 @@ def _extract_contexts_from_tool_result(tool_name: str, content: str) -> list:
     # Handle RAG tool responses with custom format
     if any(
         rag_tool in tool_name.lower()
-        for rag_tool in ["naive_llm", "contextual_compression", "multi_query", "parent_document"]
+        for rag_tool in [
+            "naive_llm",
+            "contextual_compression",
+            "multi_query",
+            "parent_document",
+        ]
     ):
         contexts.extend(_extract_rag_tool_contexts(content))
     elif tool_name == "tavily_search_results_json":
@@ -403,9 +408,9 @@ def _extract_rag_tool_contexts(content: str) -> list:
                 if isinstance(parsed_list, list) and len(parsed_list) > 0:
                     # Get the first (and likely only) dict in the list
                     result_dict = parsed_list[0]
-                    if isinstance(result_dict, dict) and 'context' in result_dict:
-                        context_data = result_dict['context']
-                        
+                    if isinstance(result_dict, dict) and "context" in result_dict:
+                        context_data = result_dict["context"]
+
                         # Extract from context list
                         if isinstance(context_data, list):
                             for item in context_data:
@@ -452,14 +457,22 @@ def _extract_rag_tool_contexts(content: str) -> list:
             page_content_pattern = r"page_content='([^']+)'"
             page_content_matches = re.findall(page_content_pattern, content)
             if page_content_matches:
-                contexts.extend([match for match in page_content_matches if len(match.strip()) > 30])
+                contexts.extend(
+                    [match for match in page_content_matches if len(match.strip()) > 30]
+                )
 
             # Alternative pattern with double quotes
             if not contexts:
                 page_content_pattern_dq = r'page_content="([^"]+)"'
                 page_content_matches_dq = re.findall(page_content_pattern_dq, content)
                 if page_content_matches_dq:
-                    contexts.extend([match for match in page_content_matches_dq if len(match.strip()) > 30])
+                    contexts.extend(
+                        [
+                            match
+                            for match in page_content_matches_dq
+                            if len(match.strip()) > 30
+                        ]
+                    )
 
     except Exception as e:
         # Ultimate fallback: treat as regular text and extract meaningful chunks
@@ -591,7 +604,7 @@ def extract_contexts_for_eval(langchain_messages):
     Returns:
         list: List of context strings for retrieved_contexts field
     """
-    
+
     # Handle direct list of strings (edge case: ["{'messages': [HumanMessage(content='...', 'context1', 'context2', ...])
     if isinstance(langchain_messages, list):
         # Check if this is a list of strings with context data
@@ -599,7 +612,9 @@ def extract_contexts_for_eval(langchain_messages):
             contexts = []
             for item in langchain_messages:
                 # If item starts with serialized format, try to extract contexts from it
-                if item.strip().startswith("[{'messages':") or item.strip().startswith("{'messages':"):
+                if item.strip().startswith("[{'messages':") or item.strip().startswith(
+                    "{'messages':"
+                ):
                     # Try to extract contexts from this serialized format
                     extracted = _extract_rag_tool_contexts(item)
                     contexts.extend(extracted)
