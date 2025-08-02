@@ -6,13 +6,9 @@ from tqdm.notebook import tqdm
 import gc
 from joblib import Memory
 
-from ragas.llms import LangchainLLMWrapper
-from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 from langchain.prompts import ChatPromptTemplate
-
-from ragas.testset import TestsetGenerator
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import DirectoryLoader, PyMuPDFLoader
@@ -21,7 +17,7 @@ from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 
-from langgraph.graph import START, StateGraph
+from langgraph.graph import START, END, StateGraph
 from typing_extensions import List, TypedDict
 from langchain_core.documents import Document
 
@@ -29,6 +25,7 @@ memory = Memory(location="./cache")
 
 load_dotenv(dotenv_path="../../.env")
 
+DATA_FOLDER = os.environ['DATA_FOLDER']
 
 def check_if_env_var_is_set(env_var_name: str, human_readable_string: str = "API Key"):
     api_key = os.getenv(env_var_name)
@@ -53,6 +50,8 @@ check_if_env_var_is_set("COHERE_API_KEY", "Cohere API key")
 
 def load_and_prepare_pdf_loan_docs(folder: str = "../data/"):
     print("Current working directory:", os.getcwd())
+    if DATA_FOLDER:
+        folder = DATA_FOLDER
     if not os.path.exists(folder):
         folder = "../" + folder
     print("Loading student loan pdfs (knowledge) data...")
@@ -65,6 +64,8 @@ def load_and_prepare_pdf_loan_docs(folder: str = "../data/"):
 
 def load_and_prepare_csv_loan_docs(folder: str = "../data/"):
     print("Current working directory:", os.getcwd())
+    if DATA_FOLDER:
+        folder = DATA_FOLDER
     if not os.path.exists(folder):
         folder = "../" + folder
     loader = CSVLoader(
@@ -124,34 +125,6 @@ def load_and_prepare_csv_loan_docs(folder: str = "../data/"):
     gc.collect()
     return filtered_docs.copy()
 
-
-# ### Knowledge Graph Based Synthetic Generation
-#
-# Ragas uses a knowledge graph based approach to create data. This is extremely useful as it allows us to create complex queries rather simply. The additional testset complexity allows us to evaluate larger problems more effectively, as systems tend to be very strong on simple evaluation tasks.
-#
-# Let's start by defining our `generator_llm` (which will generate our questions, summaries, and more), and our `generator_embeddings` which will be useful in building our graph.
-
-# ### Abstracted SDG
-#
-# The above method is the full process - but we can shortcut that using the provided abstractions!
-#
-# This will generate our knowledge graph under the hood, and will - from there - generate our personas and scenarios to construct our queries.
-#
-#
-
-
-@memory.cache
-def generate_golden_master(original_doc, items_to_pick: int = 20, final_size: int = 10):
-    generator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4.1"))
-    generator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
-    generator = TestsetGenerator(
-        llm=generator_llm, embedding_model=generator_embeddings
-    )
-    golden_master_dataset = generator.generate_with_langchain_docs(
-        original_doc[:items_to_pick], testset_size=final_size
-    )
-    golden_master_dataset.to_pandas()
-    return golden_master_dataset
 
 
 def split_documents(documents):
@@ -245,6 +218,10 @@ class State(TypedDict):
     response: str
 
 
-graph_builder = StateGraph(State).add_sequence([retrieve, generate])
+graph_builder = StateGraph(State)
+graph_builder.add_node("retrieve", retrieve)
+graph_builder.add_node("generate", generate)
 graph_builder.add_edge(START, "retrieve")
+graph_builder.add_edge("retrieve", "generate")
+graph_builder.add_edge("generate", END)
 graph = graph_builder.compile()

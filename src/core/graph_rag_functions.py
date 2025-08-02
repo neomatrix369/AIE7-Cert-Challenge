@@ -9,7 +9,7 @@ from langchain_openai import ChatOpenAI
 from langchain.retrievers.contextual_compression import ContextualCompressionRetriever
 from langchain_cohere import CohereRerank
 from langchain.prompts import ChatPromptTemplate
-from langgraph.graph import START, StateGraph
+from langgraph.graph import START, END, StateGraph
 from langchain_core.documents import Document
 from typing_extensions import List, TypedDict
 
@@ -92,8 +92,12 @@ class NaiveState(TypedDict):
     response: str
 
 
-naive_graph_builder = StateGraph(NaiveState).add_sequence([naive_retrieve, generate])
+naive_graph_builder = StateGraph(NaiveState)
+naive_graph_builder.add_node("naive_retrieve", naive_retrieve)
+naive_graph_builder.add_node("generate", generate)
 naive_graph_builder.add_edge(START, "naive_retrieve")
+naive_graph_builder.add_edge("naive_retrieve", "generate")
+naive_graph_builder.add_edge("generate", END)
 naive_graph = naive_graph_builder.compile()
 
 ### Contextual Compression Retriever
@@ -117,10 +121,12 @@ class ContextualCompressionState(TypedDict):
     response: str
 
 
-contextual_compression_graph_builder = StateGraph(
-    ContextualCompressionState
-).add_sequence([contextual_compression_retrieve, generate])
+contextual_compression_graph_builder = StateGraph(ContextualCompressionState)
+contextual_compression_graph_builder.add_node("contextual_compression_retrieve", contextual_compression_retrieve)
+contextual_compression_graph_builder.add_node("generate", generate)
 contextual_compression_graph_builder.add_edge(START, "contextual_compression_retrieve")
+contextual_compression_graph_builder.add_edge("contextual_compression_retrieve", "generate")
+contextual_compression_graph_builder.add_edge("generate", END)
 contextual_compression_graph = contextual_compression_graph_builder.compile()
 
 ### Multi Query Retriever
@@ -140,10 +146,12 @@ class MultiQueryState(TypedDict):
     response: str
 
 
-multi_query_graph_builder = StateGraph(MultiQueryState).add_sequence(
-    [multi_query_retrieve, generate]
-)
+multi_query_graph_builder = StateGraph(MultiQueryState)
+multi_query_graph_builder.add_node("multi_query_retrieve", multi_query_retrieve)
+multi_query_graph_builder.add_node("generate", generate)
 multi_query_graph_builder.add_edge(START, "multi_query_retrieve")
+multi_query_graph_builder.add_edge("multi_query_retrieve", "generate")
+multi_query_graph_builder.add_edge("generate", END)
 multi_query_graph = multi_query_graph_builder.compile()
 
 ### Parent-Document Retriever
@@ -187,8 +195,10 @@ class ParentDocumentState(TypedDict):
     response: str
 
 
-parent_document_graph_builder = StateGraph(ParentDocumentState).add_sequence(
-    [parent_document_retrieve, generate]
-)
+parent_document_graph_builder = StateGraph(ParentDocumentState)
+parent_document_graph_builder.add_node("parent_document_retrieve", parent_document_retrieve)
+parent_document_graph_builder.add_node("generate", generate)
 parent_document_graph_builder.add_edge(START, "parent_document_retrieve")
+parent_document_graph_builder.add_edge("parent_document_retrieve", "generate")
+parent_document_graph_builder.add_edge("generate", END)
 parent_document_graph = parent_document_graph_builder.compile()
