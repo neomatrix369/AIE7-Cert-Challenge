@@ -8,7 +8,7 @@ import operator
 from langchain_core.messages import BaseMessage
 from langgraph.prebuilt import ToolNode
 from langgraph.graph import StateGraph, END
-from tavily_tools import (
+from src.tools.tavily_tools import (
     tavily_studentaid_search,
     tavily_mohela_search,
     tavily_student_loan_search,
