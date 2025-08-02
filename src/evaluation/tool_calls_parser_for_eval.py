@@ -666,3 +666,124 @@ def process_message_for_eval_debug(message_obj):
     else:
         logger.warning(f"⚠️ Unexpected message type: {type(message_obj)}")
         return []
+
+
+def extract_token_usage_from_messages(messages, question_text="", answer_text=""):
+    """
+    Extract token usage information from LangChain message objects.
+    
+    Args:
+        messages: List of LangChain message objects from agent response
+        question_text: Original question text for fallback estimation
+        answer_text: Generated answer text for fallback estimation
+        
+    Returns:
+        dict: Token usage breakdown with input_tokens, output_tokens, total_tokens
+    """
+    input_tokens = 0
+    output_tokens = 0
+    total_tokens = 0
+
+    for message in messages:
+        # Check for usage_metadata (newer LangChain format)
+        if hasattr(message, "usage_metadata"):
+            usage = message.usage_metadata
+            if hasattr(usage, "input_tokens"):
+                input_tokens += usage.input_tokens
+            if hasattr(usage, "output_tokens"):
+                output_tokens += usage.output_tokens
+            if hasattr(usage, "total_tokens"):
+                total_tokens += usage.total_tokens
+        # Check for response_metadata with token_usage (OpenAI format)
+        elif hasattr(message, "response_metadata"):
+            metadata = message.response_metadata
+            if "token_usage" in metadata:
+                token_usage = metadata["token_usage"]
+                input_tokens += token_usage.get("prompt_tokens", 0)
+                output_tokens += token_usage.get("completion_tokens", 0)
+                total_tokens += token_usage.get("total_tokens", 0)
+
+    # If no token data found in messages, estimate from text
+    if total_tokens == 0:
+        # Rough estimation: 1 token ≈ 0.75 words for GPT models
+        estimated_input_tokens = len(question_text.split()) / 0.75 if question_text else 0
+        estimated_output_tokens = len(answer_text.split()) / 0.75 if answer_text else 0
+        input_tokens = int(estimated_input_tokens)
+        output_tokens = int(estimated_output_tokens)
+        total_tokens = input_tokens + output_tokens
+
+    return {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "total_tokens": total_tokens
+    }
+
+
+def process_agent_response(response):
+    """
+    Extract common data from agent response messages.
+    
+    Args:
+        response: Agent response dict with "messages" key
+        
+    Returns:
+        dict: Contains contexts, tools_used, final_answer, messages
+    """
+    messages = response["messages"]
+    contexts = extract_contexts_for_eval(messages)
+    parsed_data = parse_langchain_messages(messages)
+    tools_used_raw = parsed_data.get("summary", {}).get("tools", [])
+    
+    # Filter out None values and ensure all are strings
+    tools_used = [str(tool) for tool in tools_used_raw if tool is not None]
+    
+    final_answer = messages[-1].content if messages else ""
+    
+    return {
+        "contexts": contexts,
+        "tools_used": tools_used,
+        "final_answer": final_answer,
+        "messages": messages
+    }
+
+
+def build_performance_metrics(start_time, end_time, messages, contexts, question_text="", answer_text="", retrieval_method="parent_document"):
+    """
+    Build comprehensive performance metrics from RAG agent execution.
+    
+    Args:
+        start_time: Start timestamp (time.time())
+        end_time: End timestamp (time.time())
+        messages: List of LangChain message objects
+        contexts: List of retrieved contexts
+        question_text: Original question for token estimation
+        answer_text: Generated answer for token estimation
+        retrieval_method: The retrieval method used
+        
+    Returns:
+        dict: Comprehensive performance metrics
+    """
+    # Calculate timing metrics
+    total_time_ms = int((end_time - start_time) * 1000)
+    # Estimate retrieval vs generation split (roughly 60/40 based on typical RAG patterns)
+    retrieval_time_ms = int(total_time_ms * 0.6)
+    generation_time_ms = int(total_time_ms * 0.4)
+    
+    # Extract token usage
+    token_usage = extract_token_usage_from_messages(messages, question_text, answer_text)
+    
+    # Build comprehensive metrics
+    performance_metrics = {
+        "response_time_ms": total_time_ms,
+        "retrieval_time_ms": retrieval_time_ms,
+        "generation_time_ms": generation_time_ms,
+        # -- we don't know for sure so best not to return to user
+        # "confidence_score": 0.85,  # Typical confidence for Parent Document retrieval
+        "tokens_used": token_usage["total_tokens"],
+        "input_tokens": token_usage["input_tokens"],
+        "output_tokens": token_usage["output_tokens"],
+        "retrieval_method": retrieval_method,
+        "total_contexts": len(contexts) if contexts else 0
+    }
+    
+    return performance_metrics
