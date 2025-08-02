@@ -46,6 +46,18 @@ from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders import PyMuPDFLoader
 
 
+def check_if_env_var_is_set(env_var_name: str, human_readable_string: str = "API Key"):
+    api_key = os.getenv(env_var_name)
+
+    if api_key:
+        print(f"{env_var_name} is present")
+    else:
+        print(f"{env_var_name} is NOT present, paste key at the prompt:")
+        os.environ[env_var_name] = getpass.getpass(
+            f"Please enter your {human_readable_string}: "
+        )
+
+
 def load_and_prepare_pdf_loan_docs():
     print("Loading student loan pdfs (knowledge) data...")
     path = "data/"
