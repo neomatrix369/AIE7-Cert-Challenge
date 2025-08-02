@@ -16,6 +16,7 @@ services:
     env_file:
       - ../../.env  # Load from project root .env (relative to docker-compose.yml location)
     volumes:
+      - ../../src:/app/src  # Mount source code for live development
       - ../../data:/app/data:ro  # Mount data directory as read-only
       - cache_volume:/app/cache  # Persistent cache
     restart: unless-stopped

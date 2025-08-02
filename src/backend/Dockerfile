@@ -40,16 +40,6 @@ COPY src/backend/requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the entire source code (this puts src/ contents into /app/)
-COPY src/__init__.py ./src/__init__.py
-COPY src/agents ./src/agents
-COPY src/core ./src/core
-COPY src/tools ./src/tools
-COPY src/backend/simple_api.py ./src/backend/simple_api.py
-
-# Copy data directory
-COPY data ./data
-
 # Create necessary directories
 RUN mkdir -p cache
 

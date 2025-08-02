@@ -11,13 +11,13 @@ pydantic>=2.8.0,<3.0.0
 # Environment variables
 python-dotenv==1.0.0
 
-# LangChain core components (compatible versions)
+# LangChain core components (using older versions that support add_sequence)
 langchain-core>=0.2.2,<0.3.0
 langchain>=0.2.0,<0.3.0
 langchain-openai>=0.1.8,<0.2.0
 langchain-community>=0.2.0,<0.3.0
 langchain-cohere>=0.1.9,<0.2.0
-langgraph>=0.0.69,<0.1.0
+langgraph==0.2.69
 
 # Vector database
 qdrant-client==1.15.1
@@ -28,7 +28,7 @@ pypdf2==3.0.1
 pymupdf>=1.23.0  # Required for PyMuPDFLoader
 
 # Search tools  
-tavily-python>=0.3.0
+tavily-python>=0.5.0
 
 # Visualization dependencies
 matplotlib>=3.7.0
