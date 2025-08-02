@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 import os
 import logging
 import time
+from pathlib import Path
 from typing import Optional, List
 
 # Import our RAG components
@@ -28,11 +29,6 @@ from src.evaluation.tool_calls_parser_for_eval import process_agent_response, bu
 # Load environment variables
 load_dotenv(dotenv_path=".env")
 
-# Set up logging with third-party library noise suppression
-# logging.basicConfig(
-#     level=logging.INFO,
-#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-# )
 from src.utils.logging_config import setup_logging
 
 logger = setup_logging(__name__)
@@ -115,11 +111,25 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Enhanced health check endpoint with environment information"""
+    logger.info(f"🔍 Health check requested:")
+    logger.info(f"   - Environment: {'vercel' if is_vercel_environment() else 'local'}")
+    logger.info(f"   - Read-only: {IS_READONLY}")
+    logger.info(f"   - RAG agent: {'ready' if rag_agent else 'not_initialized'}")
+
     return {
         "status": "healthy" if rag_agent else "unhealthy",
         "agent_status": "ready" if rag_agent else "not_initialized",
         "api_version": "1.0.0",
+        "environment": "local",
+        "vector_store": "qdrant_memory",  # We use in-memory Qdrant
+        "features": {
+            "rag_agent": bool(rag_agent),
+            "hybrid_dataset": True,
+            "performance_metrics": True,
+            "source_transparency": True,
+            "tools_tracking": True,
+        }
     }
 
 
@@ -135,9 +145,26 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
     - Combined hybrid knowledge base for comprehensive answers
     """
     try:
-        # Validate input
+        # Enhanced input validation
         if not request.question or not request.question.strip():
+            logger.warning("⚠️ Empty question submitted")
             raise HTTPException(status_code=400, detail="Question cannot be empty")
+
+        # Validate question length (prevent extremely long inputs)
+        if len(request.question) > 5000:
+            logger.warning(f"⚠️ Question too long: {len(request.question)} characters")
+            raise HTTPException(
+                status_code=400, 
+                detail="Question is too long. Please limit to 5000 characters or less."
+            )
+   
+        # Check for potentially problematic content
+        if len(request.question.strip()) < 3:
+            logger.warning(f"⚠️ Question too short: '{request.question.strip()}'")
+            raise HTTPException(
+                status_code=400, 
+                detail="Question is too short. Please provide a more detailed question."
+            )
 
         # Check if agent is initialized
         if not rag_agent:
@@ -156,16 +183,32 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
         # Track performance timing 
         start_time = time.time()
 
-        # Invoke the RAG agent
+        # Invoke the RAG agent with detailed error handling
         try:
             response = rag_agent.invoke(inputs)
             end_time = time.time()
             logger.info("✅ RAG agent response received successfully")
         except Exception as e:
-            logger.error(f"❌ RAG agent error: {str(e)}")
-            raise HTTPException(
-                status_code=500, detail=f"Failed to process question: {str(e)}"
-            )
+            end_time = time.time()
+            error_time = end_time - start_time
+
+            # Log detailed error information
+            logger.error(f"❌ RAG agent failed after {error_time:.2f} seconds")
+            logger.error(f"   - Error: {str(e)}")
+            logger.error(f"   - Error type: {type(e).__name__}")
+            logger.error(f"   - Question length: {len(request.question)} chars")
+
+            # Provide specific error messages based on error type
+            if "timeout" in str(e).lower():
+                detail = "Request timed out. Please try with a shorter question or try again later."
+            elif "api" in str(e).lower() or "openai" in str(e).lower():
+                detail = "External API error. Please try again in a moment."
+            elif "memory" in str(e).lower() or "resource" in str(e).lower():
+                detail = "System resources temporarily unavailable. Please try again."
+            else:
+                detail = "Unable to process your question at this time. Please try again or rephrase your question."
+
+            raise HTTPException(status_code=500, detail=detail)
 
         # Extract the final answer from agent response
         if not response or "messages" not in response:
@@ -203,9 +246,14 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
                 f"📚 Retrieved {sources_count} context sources from hybrid dataset"
             )
 
-        logger.info(
-            f"✅ Question processed successfully, response length: {len(answer)} chars"
-        )
+        # Calculate total processing time and log performance summary
+        total_processing_time = time.time() - start_time
+
+        logger.info(f"✅ Question processed successfully, response length: {len(answer)} chars")
+        logger.info(f"⏱️ Performance summary:")
+        logger.info(f"   - Total processing: {total_processing_time:.3f}s")
+        logger.info(f"   - Contexts retrieved: {len(contexts)}")
+        logger.info(f"   - Tools used: {len(tools_used)}")
 
         # Build comprehensive performance metrics using refactored function
         performance_metrics = build_performance_metrics(
@@ -229,10 +277,19 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
         )
 
     except HTTPException:
+        # Re-raise HTTP exceptions as-is (they're already properly formatted)
         raise
     except Exception as e:
-        logger.error(f"❌ Unexpected error: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        # Log the full exception details for debugging
+        logger.error(f"❌ Unexpected error in /ask endpoint: {str(e)}")
+        logger.error(f"   - Question: {request.question[:100] if hasattr(request, 'question') else 'Unknown'}...")
+        logger.error(f"   - Error type: {type(e).__name__}")
+
+        # Return user-friendly error message
+        raise HTTPException(
+            status_code=500, 
+            detail="An internal error occurred while processing your question. Please try again or contact support if the issue persists."
+        )
 
 
 @app.get("/api-info")
