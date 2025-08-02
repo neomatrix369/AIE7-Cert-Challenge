@@ -10,7 +10,6 @@ from langchain.retrievers.contextual_compression import ContextualCompressionRet
 from langchain_cohere import CohereRerank
 from langchain.prompts import ChatPromptTemplate
 from langgraph.graph import START, StateGraph
-from langchain_openai import OpenAIEmbeddings
 from langchain_core.documents import Document
 from typing_extensions import List, TypedDict
 
@@ -123,34 +122,6 @@ contextual_compression_graph_builder = StateGraph(
 ).add_sequence([contextual_compression_retrieve, generate])
 contextual_compression_graph_builder.add_edge(START, "contextual_compression_retrieve")
 contextual_compression_graph = contextual_compression_graph_builder.compile()
-
-### Contextual Compression Retriever
-contextual_compression_retriever = vector_store.as_retriever(search_kwargs={"k": 20})
-
-
-def contextual_compression_retrieve(state):
-    compressor = CohereRerank(model="rerank-v3.5")
-    compression_retriever = ContextualCompressionRetriever(
-        base_compressor=compressor,
-        base_retriever=contextual_compression_retriever,
-        search_kwargs={"k": 5},
-    )
-    retrieved_docs = compression_retriever.invoke(state["question"])
-    return {"context": retrieved_docs}
-
-
-class ContextualCompressionState(TypedDict):
-    question: str
-    context: List[Document]
-    response: str
-
-
-contextual_compression_graph_builder = StateGraph(
-    ContextualCompressionState
-).add_sequence([contextual_compression_retrieve, generate])
-contextual_compression_graph_builder.add_edge(START, "contextual_compression_retrieve")
-contextual_compression_graph = contextual_compression_graph_builder.compile()
-
 
 ### Multi Query Retriever
 from langchain.retrievers.multi_query import MultiQueryRetriever
