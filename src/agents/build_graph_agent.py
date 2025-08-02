@@ -16,8 +16,10 @@ from tavily_tools import (
 
 tavily_tool = TavilySearchResults(max_results=5)
 
+
 class AgentState(TypedDict):
     messages: Annotated[list, add_messages]
+
 
 def should_continue(state):
     last_message = state["messages"][-1]
@@ -28,7 +30,7 @@ def should_continue(state):
     return END
 
 
-def get_agent_graph(additional_tools: list):
+def get_graph_agent(additional_tools: list):
     model = ChatOpenAI(
         model="gpt-4.1-nano",
         temperature=0,  # Lower temperature for more consistent outputs
@@ -40,7 +42,7 @@ def get_agent_graph(additional_tools: list):
         response = model.invoke(messages)
         return {"messages": [response]}
 
-    tool_belt = [
+    tool_belt = additional_tools + [
         tavily_tool,
         Tool(
             name="StudentAid_Federal_Search",
@@ -58,7 +60,6 @@ def get_agent_graph(additional_tools: list):
             func=tavily_student_loan_search,
         ),
     ]
-    tool_belt.extend(additional_tools)
 
     model = model.bind_tools(tool_belt)
     tool_node = ToolNode(tool_belt)

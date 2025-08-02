@@ -163,7 +163,12 @@ def _extract_contexts_from_tool_result(tool_name: str, content: str) -> list:
     # Handle RAG tool responses with custom format
     if any(
         rag_tool in tool_name.lower()
-        for rag_tool in ["naive_llm", "contextual_compression", "multi_query"]
+        for rag_tool in [
+            "naive_llm",
+            "contextual_compression",
+            "multi_query",
+            "parent_document",
+        ]
     ):
         contexts.extend(_extract_rag_tool_contexts(content))
     elif tool_name == "tavily_search_results_json":
@@ -395,6 +400,31 @@ def _extract_rag_tool_contexts(content: str) -> list:
         import ast
         import re
 
+        # Handle the specific format: [{'messages': [...], 'context': [...]}]
+        if content.strip().startswith("[{'messages':") and "'context':" in content:
+            try:
+                # Try to parse the entire list
+                parsed_list = ast.literal_eval(content)
+                if isinstance(parsed_list, list) and len(parsed_list) > 0:
+                    # Get the first (and likely only) dict in the list
+                    result_dict = parsed_list[0]
+                    if isinstance(result_dict, dict) and "context" in result_dict:
+                        context_data = result_dict["context"]
+
+                        # Extract from context list
+                        if isinstance(context_data, list):
+                            for item in context_data:
+                                if hasattr(item, "page_content"):
+                                    contexts.append(item.page_content)
+                                elif isinstance(item, dict) and "page_content" in item:
+                                    contexts.append(item["page_content"])
+                                elif isinstance(item, str) and len(item.strip()) > 30:
+                                    contexts.append(item.strip())
+                        return contexts
+            except Exception as e:
+                # If parsing fails, try regex approach
+                pass
+
         # Handle the case where content is a string representation of a dictionary
         if "{'messages':" in content and "'context':" in content:
             # Try to extract the context part using regex
@@ -411,32 +441,41 @@ def _extract_rag_tool_contexts(content: str) -> list:
                                 contexts.append(item.page_content)
                             elif isinstance(item, dict) and "page_content" in item:
                                 contexts.append(item["page_content"])
-                            elif isinstance(item, str):
-                                contexts.append(item)
+                            elif isinstance(item, str) and len(item.strip()) > 30:
+                                contexts.append(item.strip())
                 except:
                     pass
 
-        # If direct parsing failed, try to extract from HumanMessage content
-        if not contexts and "HumanMessage(content=" in content:
-            # Extract content from HumanMessage
-            message_matches = re.findall(
-                r'HumanMessage\(content="([^"]*(?:\\.[^"]*)*)"', content, re.DOTALL
-            )
-            if not message_matches:
-                message_matches = re.findall(
-                    r"HumanMessage\(content='([^']*(?:\\.[^']*)*)'", content, re.DOTALL
+        # ❌ REMOVED: HumanMessage extraction that was pulling response content instead of contexts
+        # The original code was extracting from HumanMessage(content=...) which contains the LLM response,
+        # not the actual retrieved document contexts we need for evaluation
+
+        # ✅ NEW: Enhanced fallback for complex serialized formats
+        # If we still haven't extracted contexts, try to find Document-like patterns in the string
+        if not contexts and "page_content" in content:
+            # Look for page_content patterns in the serialized string
+            page_content_pattern = r"page_content='([^']+)'"
+            page_content_matches = re.findall(page_content_pattern, content)
+            if page_content_matches:
+                contexts.extend(
+                    [match for match in page_content_matches if len(match.strip()) > 30]
                 )
 
-            for match in message_matches:
-                # Clean up escaped characters
-                clean_content = (
-                    match.replace("\\n", "\n").replace('\\"', '"').replace("\\'", "'")
-                )
-                if len(clean_content.strip()) > 30:
-                    contexts.append(clean_content.strip())
+            # Alternative pattern with double quotes
+            if not contexts:
+                page_content_pattern_dq = r'page_content="([^"]+)"'
+                page_content_matches_dq = re.findall(page_content_pattern_dq, content)
+                if page_content_matches_dq:
+                    contexts.extend(
+                        [
+                            match
+                            for match in page_content_matches_dq
+                            if len(match.strip()) > 30
+                        ]
+                    )
 
     except Exception as e:
-        # Fallback: treat as regular text and extract meaningful chunks
+        # Ultimate fallback: treat as regular text and extract meaningful chunks
         if content and len(content.strip()) > 30:
             # Split by sentences or paragraphs
             chunks = (
@@ -560,12 +599,32 @@ def extract_contexts_for_eval(langchain_messages):
 
     Args:
         langchain_messages: List of LangChain message objects from values["messages"]
+                           OR a list that contains context strings (mixed format handling)
 
     Returns:
         list: List of context strings for retrieved_contexts field
     """
 
-    # Use our main parser function
+    # Handle direct list of strings (edge case: ["{'messages': [HumanMessage(content='...', 'context1', 'context2', ...])
+    if isinstance(langchain_messages, list):
+        # Check if this is a list of strings with context data
+        if all(isinstance(item, str) for item in langchain_messages):
+            contexts = []
+            for item in langchain_messages:
+                # If item starts with serialized format, try to extract contexts from it
+                if item.strip().startswith("[{'messages':") or item.strip().startswith(
+                    "{'messages':"
+                ):
+                    # Try to extract contexts from this serialized format
+                    extracted = _extract_rag_tool_contexts(item)
+                    contexts.extend(extracted)
+                # Otherwise, add as regular context string if meaningful
+                elif len(item.strip()) > 30:
+                    contexts.append(item.strip())
+            if contexts:
+                return contexts
+
+    # Use our main parser function for LangChain message objects
     parsed_data = parse_langchain_messages(langchain_messages)
 
     # Return just the contexts (what goes into retrieved_contexts)
