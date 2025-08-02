@@ -15,10 +15,11 @@ from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 
 from joblib import Memory
-CACHE_FOLDER = os.getenv('CACHE_FOLDER')
+
+CACHE_FOLDER = os.getenv("CACHE_FOLDER")
 cache_folder = "./cache"
 if CACHE_FOLDER:
-   cache_folder = CACHE_FOLDER
+    cache_folder = CACHE_FOLDER
 memory = Memory(location=cache_folder)
 
 from ragas.metrics import (
@@ -49,6 +50,7 @@ from src.evaluation.tool_calls_parser_for_eval import (
 # This will generate our knowledge graph under the hood, and will - from there - generate our personas and scenarios to construct our queries.
 #
 #
+
 
 @memory.cache
 def generate_golden_master(original_doc, items_to_pick: int = 20, final_size: int = 10):

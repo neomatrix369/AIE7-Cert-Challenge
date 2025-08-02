@@ -4,6 +4,7 @@ import logging
 
 # Set up logging with third-party noise suppression
 from src.utils.logging_config import setup_logging
+
 logger = setup_logging(__name__)
 
 
@@ -481,7 +482,9 @@ class RetrieverRanker:
             logger.info(f"  {status} {metric}")
 
         logger.info(f"Total available quality metrics: {len(self.available_metrics)}")
-        logger.info(f"Cost metric available: {'✓' if 'Avg_Cost_Per_Run' in self.df.columns else '✗'}")
+        logger.info(
+            f"Cost metric available: {'✓' if 'Avg_Cost_Per_Run' in self.df.columns else '✗'}"
+        )
 
 
 def main():

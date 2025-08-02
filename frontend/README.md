@@ -135,14 +135,19 @@ docker stop frontend
 docker rm frontend
 ```
 
-### Option 3: Development with Live Reload
+### Option 4: Development with Live Reload
 
-For development with file watching:
+For development with file watching and automatic updates:
 
 ```bash
 # Run with volume mounting for live changes
 docker run -p 3000:3000 -v $(pwd):/app/frontend student-loan-frontend
+
+# Or with docker-compose for development
+docker-compose up --build  # Automatically includes volume mounts
 ```
+
+The docker-compose setup includes volume mounting by default, so any changes to frontend files will be reflected immediately without rebuilding the container.
 
 ### Docker Management Commands
 
@@ -153,18 +158,58 @@ docker ps
 # View all containers
 docker ps -a
 
-# View logs
-docker logs frontend
-docker-compose logs frontend
+# View logs (real-time)
+docker logs -f frontend
+docker-compose logs -f frontend
+
+# View logs (last 100 lines)
+docker logs --tail 100 frontend
+
+# Check container health
+docker inspect --format='{{.State.Health.Status}}' frontend
+
+# Access container shell for debugging
+docker exec -it frontend /bin/bash
 
 # Remove image
 docker rmi student-loan-frontend
 
 # Clean up unused Docker resources
 docker system prune
+
+# Force cleanup (removes all unused containers, networks, images)
+docker system prune -a --volumes
 ```
 
-**Note:** When using frontend-only deployment, make sure the backend is running separately and accessible at http://localhost:8000.
+### Environment Variables & Configuration
+
+The frontend container supports the following environment variables:
+
+```bash
+# Set custom backend URL (overrides auto-detection)
+docker run -e BACKEND_URL=http://custom-backend:8000 -p 3000:3000 student-loan-frontend
+
+# Enable debug mode for container discovery
+docker run -e DEBUG=true -p 3000:3000 student-loan-frontend
+```
+
+### Network Architecture
+
+```
+┌─────────────────┐    ┌──────────────────┐
+│   Frontend      │    │    Backend       │
+│  (Port 3000)    │◄──►│  (Port 8000)     │
+│                 │    │                  │
+│ Auto-detects:   │    │ Service Name:    │
+│ • localhost     │    │ • rag-api        │
+│ • rag-api:8000  │    │                  │
+└─────────────────┘    └──────────────────┘
+          │                       │
+          └───────────────────────┘
+             student-loan-network
+```
+
+**Note:** When using frontend-only deployment, ensure the backend is running and accessible. The frontend will attempt container discovery first, then fall back to localhost:8000.
 
 ## Development
 
@@ -174,7 +219,68 @@ For production deployment, you may need to update the API URL in `index.html` fr
 
 ## Docker Files
 
-- `Dockerfile` - Frontend container configuration
-- `docker-compose.yml` - Full-stack deployment with backend
-- `docker-start.sh` - Startup script with health checks
-- `.dockerignore` - Files to exclude from Docker build
+- `Dockerfile` - Frontend container configuration (Python 3.11-slim base)
+- `docker-compose.yml` - Frontend-only deployment with container discovery
+- `docker-start.sh` - Enhanced startup script with cleanup, health checks, and environment validation
+- `.dockerignore` - Files to exclude from Docker build context
+- `.gitignore` - Version control exclusions for development
+
+## Troubleshooting
+
+### Common Issues
+
+**1. Frontend can't connect to backend:**
+```bash
+# Check if backend container is running
+docker ps | grep rag-api
+
+# Check network connectivity
+docker network ls
+docker network inspect student-loan-network
+
+# View frontend logs for connection errors
+docker logs frontend
+```
+
+**2. Port conflicts:**
+```bash
+# Check what's using port 3000
+lsof -i :3000
+
+# Use different port
+docker run -p 3001:3000 student-loan-frontend
+```
+
+**3. Container cleanup needed:**
+```bash
+# Run the enhanced cleanup script
+./docker-start.sh  # Includes automatic cleanup
+
+# Manual cleanup
+docker stop $(docker ps -q)
+docker rm $(docker ps -aq)
+docker rmi $(docker images -q --filter "dangling=true")
+```
+
+**4. Environment file issues:**
+```bash
+# Ensure .env exists in project root
+ls -la ../.env
+
+# Check required variables
+cat ../.env | grep -E "(OPENAI_API_KEY|TAVILY_API_KEY|COHERE_API_KEY)"
+```
+
+### Health Checks
+
+The frontend container includes built-in health checks:
+- **Endpoint:** `curl -f http://localhost:3000`
+- **Interval:** 30 seconds
+- **Timeout:** 10 seconds  
+- **Retries:** 3
+- **Start Period:** 10 seconds
+
+Monitor health status:
+```bash
+docker inspect --format='{{.State.Health}}' frontend
+```
