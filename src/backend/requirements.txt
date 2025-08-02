@@ -1,0 +1,52 @@
+# Simple API Requirements for AIE7 Certification Challenge
+# Federal Student Loan RAG API
+
+# Core FastAPI framework
+fastapi>=0.110.0,<1.0.0
+uvicorn[standard]>=0.27.0,<1.0.0
+
+# Request/response validation
+pydantic>=2.8.0,<3.0.0
+
+# Environment variables
+python-dotenv==1.0.0
+
+# LangChain core components (compatible versions)
+langchain-core>=0.2.2,<0.3.0
+langchain>=0.2.0,<0.3.0
+langchain-openai>=0.1.8,<0.2.0
+langchain-community>=0.2.0,<0.3.0
+langchain-cohere>=0.1.9,<0.2.0
+langgraph>=0.0.69,<0.1.0
+
+# Vector database
+qdrant-client==1.15.1
+langchain-qdrant>=0.1.0,<1.0.0
+
+# Document processing
+pypdf2==3.0.1
+pymupdf>=1.23.0  # Required for PyMuPDFLoader
+
+# Search tools  
+tavily-python>=0.3.0
+
+# Visualization dependencies
+matplotlib>=3.7.0
+seaborn>=0.12.0  # Often used with matplotlib
+
+# Core dependencies
+numpy>=1.26.0
+pandas>=2.1.0
+requests==2.31.0
+tqdm==4.66.1
+typing-extensions>=4.8.0
+
+# OpenAI dependencies
+tiktoken>=0.5.0
+tokenizers>=0.15.0
+
+# Caching and memory
+joblib==1.5.1
+
+# Optional: Development and debugging
+httpx==0.25.2
