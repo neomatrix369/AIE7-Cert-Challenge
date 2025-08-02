@@ -49,17 +49,23 @@ plt.colorbar(label='Performance Score')
 explanations = """
 📊 WHAT EACH METRIC MEANS:
 
-• Context Recall: How well the system finds relevant information from the documents
-• Faithfulness: How well the answer sticks to what's actually in the retrieved documents  
-• Factual Correctness: How accurate and correct the facts in the answer are
-• Answer Relevancy: How well the answer actually addresses the original question
-• Context Entity Recall: How well important names/places/things are preserved
-• Noise Sensitivity: How well the system ignores irrelevant or confusing information
+• Context Recall (context_recall): How well the system finds relevant information from the documents
+  • (measures how well the retrieval system finds relevant context)
+• Faithfulness (faithfulness): How well the answer sticks to what's actually in the retrieved documents
+  • (measures factual consistency between context and response)
+• Factual Correctness (factual_correctness): How accurate and correct the facts in the answer are
+  • (measures factual accuracy of the response)
+• Answer Relevancy (answer_relevancy): How well the answer actually addresses the original question
+  • (measures how relevant the answer is to the question)
+• Context Entity Recall (context_entity_recall): How well important names/places/things are preserved
+  • (measures how well entities are retrieved in context)
+• Noise Sensitivity (noise_sensitivity_relevant): How well the system ignores irrelevant or confusing information
+  • (measures robustness to irrelevant information)
 
-Higher scores = Better performance | Lower scores = Needs improvement
+Green/Higher scores = Better performance | Red/Lower scores = Needs improvement
 """
 
-plt.figtext(0.25, -0.3, explanations, fontsize=9, verticalalignment='bottom', 
+plt.figtext(0.125, -0.45, explanations, fontsize=9, verticalalignment='bottom', 
            bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.8))
 
 plt.tight_layout()
