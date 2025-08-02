@@ -40,7 +40,7 @@ def get_agent_graph(additional_tools: list):
         response = model.invoke(messages)
         return {"messages": [response]}
 
-    tool_belt = [
+    tool_belt = additional_tools + [
         tavily_tool,
         Tool(
             name="StudentAid_Federal_Search",
@@ -58,7 +58,6 @@ def get_agent_graph(additional_tools: list):
             func=tavily_student_loan_search,
         ),
     ]
-    tool_belt.extend(additional_tools)
 
     model = model.bind_tools(tool_belt)
     tool_node = ToolNode(tool_belt)
