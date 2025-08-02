@@ -16,12 +16,18 @@ from typing_extensions import List, TypedDict
 
 from dotenv import load_dotenv
 
-from core_functions import load_and_prepare_pdf_loan_docs
+from core_functions import (
+    load_and_prepare_pdf_loan_docs,
+    load_and_prepare_csv_loan_docs,
+)
 
 load_dotenv(dotenv_path=".env")
 
-
-student_loan_docs_dataset = load_and_prepare_pdf_loan_docs()
+student_loan_pdf_docs_dataset = load_and_prepare_pdf_loan_docs()
+student_loan_complaint_docs_dataset = load_and_prepare_csv_loan_docs()
+student_loan_docs_dataset = (
+    student_loan_pdf_docs_dataset + student_loan_complaint_docs_dataset
+)
 
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
 split_documents = text_splitter.split_documents(student_loan_docs_dataset)
