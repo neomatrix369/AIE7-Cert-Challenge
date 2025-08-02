@@ -47,9 +47,13 @@ from langchain_community.document_loaders import PyMuPDFLoader
 
 
 def load_and_prepare_pdf_loan_docs():
+    print("Loading student loan pdfs (knowledge) data...")
     path = "data/"
     loader = DirectoryLoader(path, glob="*.pdf", loader_cls=PyMuPDFLoader)
-    return loader.load()
+    docs = loader.load()
+    gc.collect()
+    print(f"Documents count: {len(docs)}")
+    return docs
 
 
 def load_and_prepare_csv_loan_docs():
@@ -77,7 +81,7 @@ def load_and_prepare_csv_loan_docs():
         ],
     )
 
-    print("Loading loan complaint data...")
+    print("Loading student loan complaints data...")
     loan_complaint_data = loader.load()
 
     for doc in loan_complaint_data:

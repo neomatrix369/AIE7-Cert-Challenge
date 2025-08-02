@@ -28,6 +28,7 @@ student_loan_complaint_docs_dataset = load_and_prepare_csv_loan_docs()
 student_loan_docs_dataset = (
     student_loan_pdf_docs_dataset + student_loan_complaint_docs_dataset
 )
+print(f"Total documents count: {len(student_loan_docs_dataset)}")
 
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
 split_documents = text_splitter.split_documents(student_loan_docs_dataset)
