@@ -163,7 +163,7 @@ def _extract_contexts_from_tool_result(tool_name: str, content: str) -> list:
     # Handle RAG tool responses with custom format
     if any(
         rag_tool in tool_name.lower()
-        for rag_tool in ["naive_llm", "contextual_compression", "multi_query"]
+        for rag_tool in ["naive_llm", "contextual_compression", "multi_query", "parent_document"]
     ):
         contexts.extend(_extract_rag_tool_contexts(content))
     elif tool_name == "tavily_search_results_json":
@@ -445,8 +445,24 @@ def _extract_rag_tool_contexts(content: str) -> list:
         # The original code was extracting from HumanMessage(content=...) which contains the LLM response,
         # not the actual retrieved document contexts we need for evaluation
 
+        # ✅ NEW: Enhanced fallback for complex serialized formats
+        # If we still haven't extracted contexts, try to find Document-like patterns in the string
+        if not contexts and "page_content" in content:
+            # Look for page_content patterns in the serialized string
+            page_content_pattern = r"page_content='([^']+)'"
+            page_content_matches = re.findall(page_content_pattern, content)
+            if page_content_matches:
+                contexts.extend([match for match in page_content_matches if len(match.strip()) > 30])
+
+            # Alternative pattern with double quotes
+            if not contexts:
+                page_content_pattern_dq = r'page_content="([^"]+)"'
+                page_content_matches_dq = re.findall(page_content_pattern_dq, content)
+                if page_content_matches_dq:
+                    contexts.extend([match for match in page_content_matches_dq if len(match.strip()) > 30])
+
     except Exception as e:
-        # Fallback: treat as regular text and extract meaningful chunks
+        # Ultimate fallback: treat as regular text and extract meaningful chunks
         if content and len(content.strip()) > 30:
             # Split by sentences or paragraphs
             chunks = (
@@ -576,17 +592,19 @@ def extract_contexts_for_eval(langchain_messages):
         list: List of context strings for retrieved_contexts field
     """
     
-    # Handle direct list of strings (like the format you showed)
+    # Handle direct list of strings (edge case: ["{'messages': [HumanMessage(content='...', 'context1', 'context2', ...])
     if isinstance(langchain_messages, list):
         # Check if this is a list of strings with context data
         if all(isinstance(item, str) for item in langchain_messages):
             contexts = []
             for item in langchain_messages:
-                # Skip the first item if it starts with "{'messages':" as it's metadata
-                if item.strip().startswith("{'messages':"):
-                    continue
-                # Add context strings that are meaningful (longer than 30 chars)
-                if len(item.strip()) > 30:
+                # If item starts with serialized format, try to extract contexts from it
+                if item.strip().startswith("[{'messages':") or item.strip().startswith("{'messages':"):
+                    # Try to extract contexts from this serialized format
+                    extracted = _extract_rag_tool_contexts(item)
+                    contexts.extend(extracted)
+                # Otherwise, add as regular context string if meaningful
+                elif len(item.strip()) > 30:
                     contexts.append(item.strip())
             if contexts:
                 return contexts
