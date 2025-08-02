@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app/frontend  # Mount frontend files for live development
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      - rag-api
+    networks:
+      - student-loan-network
+
+  # Include backend service for full-stack deployment
+  rag-api:
+    build: 
+      context: ../  # Build from parent directory to access src/ modules
+      dockerfile: src/backend/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env  # Load from project root .env
+    volumes:
+      - ../src:/app/src  # Mount source code for live development
+      - ../data:/app/data:ro  # Mount data directory as read-only
+      - cache_volume:/app/cache  # Persistent cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - student-loan-network
+
+volumes:
+  cache_volume:
+
+networks:
+  student-loan-network:
+    driver: bridge
