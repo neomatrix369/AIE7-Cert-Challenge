@@ -25,28 +25,25 @@ from src.agents.build_graph_agent import get_graph_agent
 from src.agents.llm_tools_for_toolbelt import ask_parent_document_llm_tool
 from langchain_core.messages import HumanMessage
 from src.evaluation.tool_calls_parser_for_eval import process_agent_response, build_performance_metrics
+from get_api_info_details import get_api_info_details
 
 # Load environment variables
 load_dotenv(dotenv_path=".env")
 
 from src.utils.logging_config import setup_logging
+from src.utils.api_validation import validate_question_input, validate_agent_availability
+from src.utils.api_error_handling import handle_rag_agent_error, handle_unexpected_error
 
 logger = setup_logging(__name__)
 
 # Suppress verbose logging from third-party libraries
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("httpcore").setLevel(logging.WARNING)
-logging.getLogger("openai").setLevel(logging.WARNING)
-logging.getLogger("urllib3").setLevel(logging.WARNING)
-logging.getLogger("requests").setLevel(logging.WARNING)
-logging.getLogger("uvicorn").setLevel(logging.WARNING)
-logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
-logging.getLogger("langchain").setLevel(logging.WARNING)
-logging.getLogger("langchain_core").setLevel(logging.WARNING)
-logging.getLogger("langchain_openai").setLevel(logging.WARNING)
-logging.getLogger("qdrant_client").setLevel(logging.WARNING)
-logging.getLogger("cohere").setLevel(logging.WARNING)
-logging.getLogger("tavily").setLevel(logging.WARNING)
+third_party_loggers = [
+    "httpx", "httpcore", "openai", "urllib3", "requests", 
+    "uvicorn", "uvicorn.access", "langchain", "langchain_core", 
+    "langchain_openai", "qdrant_client", "cohere", "tavily"
+]
+for logger_name in third_party_loggers:
+    logging.getLogger(logger_name).setLevel(logging.WARNING)
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -113,8 +110,7 @@ async def root():
 async def health_check():
     """Enhanced health check endpoint with environment information"""
     logger.info(f"🔍 Health check requested:")
-    logger.info(f"   - Environment: {'vercel' if is_vercel_environment() else 'local'}")
-    logger.info(f"   - Read-only: {IS_READONLY}")
+    logger.info(f"   - Environment: {'local'}")
     logger.info(f"   - RAG agent: {'ready' if rag_agent else 'not_initialized'}")
 
     return {
@@ -145,33 +141,9 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
     - Combined hybrid knowledge base for comprehensive answers
     """
     try:
-        # Enhanced input validation
-        if not request.question or not request.question.strip():
-            logger.warning("⚠️ Empty question submitted")
-            raise HTTPException(status_code=400, detail="Question cannot be empty")
-
-        # Validate question length (prevent extremely long inputs)
-        if len(request.question) > 5000:
-            logger.warning(f"⚠️ Question too long: {len(request.question)} characters")
-            raise HTTPException(
-                status_code=400, 
-                detail="Question is too long. Please limit to 5000 characters or less."
-            )
-   
-        # Check for potentially problematic content
-        if len(request.question.strip()) < 3:
-            logger.warning(f"⚠️ Question too short: '{request.question.strip()}'")
-            raise HTTPException(
-                status_code=400, 
-                detail="Question is too short. Please provide a more detailed question."
-            )
-
-        # Check if agent is initialized
-        if not rag_agent:
-            raise HTTPException(
-                status_code=503,
-                detail="RAG agent is not initialized. Please try again later.",
-            )
+        # Enhanced input validation using utility functions
+        validate_question_input(request.question)
+        validate_agent_availability(rag_agent)
 
         logger.info(f"📝 Processing question: {request.question[:100]}...")
 
@@ -189,26 +161,7 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
             end_time = time.time()
             logger.info("✅ RAG agent response received successfully")
         except Exception as e:
-            end_time = time.time()
-            error_time = end_time - start_time
-
-            # Log detailed error information
-            logger.error(f"❌ RAG agent failed after {error_time:.2f} seconds")
-            logger.error(f"   - Error: {str(e)}")
-            logger.error(f"   - Error type: {type(e).__name__}")
-            logger.error(f"   - Question length: {len(request.question)} chars")
-
-            # Provide specific error messages based on error type
-            if "timeout" in str(e).lower():
-                detail = "Request timed out. Please try with a shorter question or try again later."
-            elif "api" in str(e).lower() or "openai" in str(e).lower():
-                detail = "External API error. Please try again in a moment."
-            elif "memory" in str(e).lower() or "resource" in str(e).lower():
-                detail = "System resources temporarily unavailable. Please try again."
-            else:
-                detail = "Unable to process your question at this time. Please try again or rephrase your question."
-
-            raise HTTPException(status_code=500, detail=detail)
+            handle_rag_agent_error(e, start_time, request.question)
 
         # Extract the final answer from agent response
         if not response or "messages" not in response:
@@ -280,62 +233,13 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
         # Re-raise HTTP exceptions as-is (they're already properly formatted)
         raise
     except Exception as e:
-        # Log the full exception details for debugging
-        logger.error(f"❌ Unexpected error in /ask endpoint: {str(e)}")
-        logger.error(f"   - Question: {request.question[:100] if hasattr(request, 'question') else 'Unknown'}...")
-        logger.error(f"   - Error type: {type(e).__name__}")
-
-        # Return user-friendly error message
-        raise HTTPException(
-            status_code=500, 
-            detail="An internal error occurred while processing your question. Please try again or contact support if the issue persists."
-        )
+        handle_unexpected_error(e, getattr(request, 'question', None))
 
 
 @app.get("/api-info")
 async def get_api_info():
     """Get detailed API information and capabilities"""
-    return {
-        "api_name": "Federal Student Loan Assistant",
-        "version": "1.0.0",
-        "description": "RAG-powered API for federal student loan customer service",
-        "capabilities": {
-            "knowledge_base": {
-                "pdf_documents": [
-                    "Academic Calendars, Cost of Attendance, and Packaging",
-                    "Applications and Verification Guide",
-                    "The Federal Pell Grant Program",
-                    "The Direct Loan Program",
-                ],
-                "customer_data": "4,547 real customer complaints and scenarios",
-                "total_documents": "Hybrid dataset with policy + complaint knowledge",
-            },
-            "retrieval_method": "Parent Document (best performing from RAGAS evaluation)",
-            "evaluation_metrics": {
-                "context_recall": "0.89",
-                "faithfulness": "0.82",
-                "answer_relevancy": "0.62",
-                "factual_correctness": "0.41",
-            },
-        },
-        "usage": {
-            "endpoint": "/ask",
-            "method": "POST",
-            "example_questions": [
-                "What are the requirements for federal student loan forgiveness?",
-                "How do I apply for income-driven repayment plans?",
-                "What should I do if my loan servicer is not responding?",
-                "What are the differences between federal and private student loans?",
-                "How does loan consolidation work?",
-            ],
-        },
-        "response_format": {
-            "answer": "Generated response text",
-            "sources_count": "Number of knowledge sources used",
-            "success": "Boolean indicating success",
-            "message": "Status message",
-        },
-    }
+    return get_api_info_details()
 
 
 if __name__ == "__main__":
