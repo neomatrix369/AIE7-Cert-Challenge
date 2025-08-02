@@ -1,3 +1,4 @@
+import logging
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_community.tools.arxiv.tool import ArxivQueryRun
 from langchain.tools import Tool
@@ -14,6 +15,10 @@ from src.tools.tavily_tools import (
     tavily_student_loan_search,
 )
 
+# Set up logging with third-party noise suppression
+from src.utils.logging_config import setup_logging
+logger = setup_logging(__name__)
+
 tavily_tool = TavilySearchResults(max_results=5)
 
 
@@ -23,14 +28,17 @@ class AgentState(TypedDict):
 
 def should_continue(state):
     last_message = state["messages"][-1]
-
+    
     if last_message.tool_calls:
+        logger.info(f"🔧 Agent requesting {len(last_message.tool_calls)} tool calls")
         return "action"
 
+    logger.info("✅ Agent conversation complete, no more tool calls needed")
     return END
 
 
 def get_graph_agent(additional_tools: list):
+    logger.info(f"🤖 Creating graph agent with {len(additional_tools)} additional tools")
     model = ChatOpenAI(
         model="gpt-4.1-nano",
         temperature=0,  # Lower temperature for more consistent outputs
@@ -38,8 +46,10 @@ def get_graph_agent(additional_tools: list):
     )
 
     def call_model(state):
+        logger.info(f"🧠 LLM processing {len(state['messages'])} messages")
         messages = state["messages"]
         response = model.invoke(messages)
+        logger.info(f"📝 LLM generated response with {len(response.content) if hasattr(response, 'content') else 0} characters")
         return {"messages": [response]}
 
     tool_belt = additional_tools + [
@@ -63,6 +73,8 @@ def get_graph_agent(additional_tools: list):
 
     model = model.bind_tools(tool_belt)
     tool_node = ToolNode(tool_belt)
+    
+    logger.info(f"🔧 Agent toolbelt configured with {len(tool_belt)} total tools")
 
     uncompiled_graph = StateGraph(AgentState)
 
@@ -74,4 +86,5 @@ def get_graph_agent(additional_tools: list):
 
     uncompiled_graph.add_edge("action", "agent")
 
+    logger.info("✅ Agent graph compiled and ready")
     return uncompiled_graph.compile()
