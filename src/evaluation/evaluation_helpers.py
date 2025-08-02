@@ -14,6 +14,12 @@ from ragas.testset import TestsetGenerator
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 
+from joblib import Memory
+CACHE_FOLDER = os.getenv('CACHE_FOLDER')
+cache_folder = "./cache"
+if CACHE_FOLDER:
+   cache_folder = CACHE_FOLDER
+memory = Memory(location=cache_folder)
 
 from ragas.metrics import (
     LLMContextRecall,

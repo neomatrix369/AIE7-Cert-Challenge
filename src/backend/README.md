@@ -142,7 +142,7 @@ curl -X POST "http://localhost:8000/ask" \
 ```json
 {
   "question": "What should I do if I can't make my student loan payments?",
-  "max_response_length": 1000  // Optional
+  "max_response_length": 2000  // Optional
 }
 ```
 

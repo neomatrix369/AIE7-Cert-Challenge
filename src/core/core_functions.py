@@ -1,10 +1,11 @@
 import os
+import logging
 from getpass import getpass
 from dotenv import load_dotenv
 from langchain_community.document_loaders import CSVLoader
 from tqdm.notebook import tqdm
 import gc
-from joblib import Memory
+from datetime import datetime
 
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
@@ -21,19 +22,23 @@ from langgraph.graph import START, END, StateGraph
 from typing_extensions import List, TypedDict
 from langchain_core.documents import Document
 
-memory = Memory(location="./cache")
+
+# Set up logging with third-party noise suppression
+from src.utils.logging_config import setup_logging
+logger = setup_logging(__name__)
 
 load_dotenv(dotenv_path="../../.env")
 
-DATA_FOLDER = os.environ['DATA_FOLDER']
+DATA_FOLDER = os.getenv('DATA_FOLDER')
+DEFAULT_FOLDER_LOCATION = "../data/"
 
 def check_if_env_var_is_set(env_var_name: str, human_readable_string: str = "API Key"):
     api_key = os.getenv(env_var_name)
 
     if api_key:
-        print(f"{env_var_name} is present")
+        logger.info(f"🔑 {env_var_name} is present")
     else:
-        print(f"{env_var_name} is NOT present, paste key at the prompt:")
+        logger.warning(f"⚠️ {env_var_name} is NOT present, prompting for key")
         os.environ[env_var_name] = getpass.getpass(
             f"Please enter your {human_readable_string}: "
         )
@@ -42,32 +47,29 @@ def check_if_env_var_is_set(env_var_name: str, human_readable_string: str = "API
 check_if_env_var_is_set("OPENAI_API_KEY", "OpenAI API key")
 check_if_env_var_is_set("COHERE_API_KEY", "Cohere API key")
 
-
 #
 # ### Data Preparation
 #
-
-
-def load_and_prepare_pdf_loan_docs(folder: str = "../data/"):
-    print("Current working directory:", os.getcwd())
+def load_and_prepare_pdf_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
+    logger.info(f"📁 Current working directory: {os.getcwd()}")
     if DATA_FOLDER:
         folder = DATA_FOLDER
     if not os.path.exists(folder):
-        folder = "../" + folder
-    print("Loading student loan pdfs (knowledge) data...")
+        folder = "../" + DEFAULT_FOLDER_LOCATION
+    logger.info(f"📄 Loading student loan PDFs from: {folder}")
     loader = DirectoryLoader(folder, glob="*.pdf", loader_cls=PyMuPDFLoader)
     docs = loader.load()
     gc.collect()
-    print(f"Documents count: {len(docs)}")
+    logger.info(f"✅ Loaded {len(docs)} PDF documents")
     return docs
 
 
-def load_and_prepare_csv_loan_docs(folder: str = "../data/"):
-    print("Current working directory:", os.getcwd())
+def load_and_prepare_csv_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
+    logger.info(f"📁 Current working directory: {os.getcwd()}")
     if DATA_FOLDER:
         folder = DATA_FOLDER
     if not os.path.exists(folder):
-        folder = "../" + folder
+        folder = "../" + DEFAULT_FOLDER_LOCATION
     loader = CSVLoader(
         file_path=f"{folder}/complaints.csv",
         metadata_columns=[
@@ -92,7 +94,7 @@ def load_and_prepare_csv_loan_docs(folder: str = "../data/"):
         ],
     )
 
-    print("Loading student loan complaints data...")
+    logger.info(f"📊 Loading student loan complaints from: {folder}/complaints.csv")
     loan_complaint_data = loader.load()
 
     for doc in loan_complaint_data:
@@ -102,7 +104,7 @@ def load_and_prepare_csv_loan_docs(folder: str = "../data/"):
 
     ### Cleaning the original documents
 
-    print(f"Original documents count: {len(loan_complaint_data)}")
+    logger.info(f"📋 Original complaint documents count: {len(loan_complaint_data)}")
 
     filtered_docs = []
     for doc in loan_complaint_data:
@@ -120,7 +122,7 @@ def load_and_prepare_csv_loan_docs(folder: str = "../data/"):
 
         filtered_docs.append(doc)
 
-    print(f"Documents count after filtering: {len(filtered_docs)}")
+    logger.info(f"✅ Filtered complaint documents count: {len(filtered_docs)}")
 
     gc.collect()
     return filtered_docs.copy()
@@ -128,15 +130,18 @@ def load_and_prepare_csv_loan_docs(folder: str = "../data/"):
 
 
 def split_documents(documents):
+    logger.info(f"📄 Splitting {len(documents)} documents into chunks (size=750, overlap=100)")
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
-    split_documents = text_splitter.split_documents(docs)
-    len(split_documents)
-    return split_documents
+    split_docs = text_splitter.split_documents(documents)
+    logger.info(f"✅ Created {len(split_docs)} document chunks")
+    return split_docs
 
 
 def get_vector_store(split_documents):
+    logger.info(f"🗃️ Starting Qdrant in-memory database")
     client = QdrantClient(":memory:")
 
+    logger.info(f"📦 Creating Qdrant collection 'loan_data'")
     client.create_collection(
         collection_name="loan_data",
         vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
@@ -149,8 +154,10 @@ def get_vector_store(split_documents):
         embedding=embeddings,
     )
 
+    logger.info(f"⬆️ Adding {len(split_documents)} documents to Qdrant collection")
     # We can now add our documents to our vector store.
     vector_store.add_documents(documents=split_documents)
+    logger.info(f"✅ Qdrant vector store ready with {len(split_documents)} documents")
     return vector_store
 
 
@@ -165,7 +172,9 @@ def get_retriever(vector_store):
 
 
 def retrieve(state, retriever):
+    logger.info(f"🔍 Retrieving documents for question: {state['question'][:100]}...")
     retrieved_docs = retriever.invoke(state["question"])
+    logger.info(f"📚 Retrieved {len(retrieved_docs)} relevant documents")
     return {"context": retrieved_docs}
 
 
@@ -199,11 +208,13 @@ llm = ChatOpenAI(model="gpt-4.1-nano")
 
 
 def generate(state):
+    logger.info(f"🤖 Generating response using {len(state['context'])} context documents")
     docs_content = "\n\n".join(doc.page_content for doc in state["context"])
     messages = rag_prompt.format_messages(
         question=state["question"], context=docs_content
     )
     response = llm.invoke(messages)
+    logger.info(f"✅ Generated response with {len(response.content)} characters")
     return {"response": response.content}
 
 

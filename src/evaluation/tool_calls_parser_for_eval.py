@@ -1,5 +1,10 @@
 import re
 import json
+import logging
+
+# Set up logging with third-party noise suppression
+from src.utils.logging_config import setup_logging
+logger = setup_logging(__name__)
 
 
 class ToolCallParser:
@@ -497,28 +502,28 @@ def _extract_rag_tool_contexts(content: str) -> list:
 
 
 def print_formatted_results(data):
-    print("=== PARSING RESULTS ===")
-    print(f"Tool calls: {data['summary']['total_calls']}")
-    print(f"Tool results: {data['summary']['total_results']}")
-    print(f"Tools used: {data['summary']['tools']}")
+    logger.info("=== PARSING RESULTS ===")
+    logger.info(f"Tool calls: {data['summary']['total_calls']}")
+    logger.info(f"Tool results: {data['summary']['total_results']}")
+    logger.info(f"Tools used: {data['summary']['tools']}")
     if ("nodes" in data["summary"]) and data["summary"]["nodes"]:
-        print(f"Execution nodes: {data['summary']['nodes']}")
+        logger.info(f"Execution nodes: {data['summary']['nodes']}")
 
-    print("\n=== TOOL CALLS ===")
+    logger.info("=== TOOL CALLS ===")
     for i, call in enumerate(data["calls"], 1):
-        print(f"{i}. {call['tool']} -> {call['args']}")
+        logger.info(f"{i}. {call['tool']} -> {call['args']}")
 
-    print("\n=== TOOL RESULTS ===")
+    logger.info("=== TOOL RESULTS ===")
     for i, result in enumerate(data["results"], 1):
         preview = result["content"][:100].replace("\n", " ")
-        print(f"{i}. {result['tool']} -> {preview}...")
+        logger.info(f"{i}. {result['tool']} -> {preview}...")
 
     # Demo the new context extraction functionality
-    print("\n=== CONTEXT EXTRACTION DEMO ===")
+    logger.info("=== CONTEXT EXTRACTION DEMO ===")
     contexts = parse_tool_call(data["results"])
-    print(f"Extracted {len(contexts)} contexts for evaluation:")
+    logger.info(f"📚 Extracted {len(contexts)} contexts for evaluation")
     for i, context in enumerate(contexts[:3], 1):
-        print(f"{i}. {context[:150]}...")
+        logger.debug(f"{i}. {context[:150]}...")
 
 
 # Test and demo
@@ -528,31 +533,31 @@ if __name__ == "__main__":
         with open("paste.txt", "r") as f:
             data = parse_logs(f.read())
 
-        print("=== PARSING RESULTS ===")
-        print(f"Tool calls: {data['summary']['total_calls']}")
-        print(f"Tool results: {data['summary']['total_results']}")
-        print(f"Tools used: {data['summary']['tools']}")
+        logger.info("=== PARSING RESULTS ===")
+        logger.info(f"Tool calls: {data['summary']['total_calls']}")
+        logger.info(f"Tool results: {data['summary']['total_results']}")
+        logger.info(f"Tools used: {data['summary']['tools']}")
         if data["summary"]["nodes"]:
-            print(f"Execution nodes: {data['summary']['nodes']}")
+            logger.info(f"Execution nodes: {data['summary']['nodes']}")
 
-        print("\n=== TOOL CALLS ===")
+        logger.info("=== TOOL CALLS ===")
         for i, call in enumerate(data["calls"], 1):
-            print(f"{i}. {call['tool']} -> {call['args']}")
+            logger.info(f"{i}. {call['tool']} -> {call['args']}")
 
-        print("\n=== TOOL RESULTS ===")
+        logger.info("=== TOOL RESULTS ===")
         for i, result in enumerate(data["results"], 1):
             preview = result["content"][:100].replace("\n", " ")
-            print(f"{i}. {result['tool']} -> {preview}...")
+            logger.info(f"{i}. {result['tool']} -> {preview}...")
 
         # Demo the new context extraction functionality
-        print("\n=== CONTEXT EXTRACTION DEMO ===")
+        logger.info("=== CONTEXT EXTRACTION DEMO ===")
         contexts = parse_tool_call(data["results"])
-        print(f"Extracted {len(contexts)} contexts for evaluation:")
+        logger.info(f"📚 Extracted {len(contexts)} contexts for evaluation")
         for i, context in enumerate(contexts[:3], 1):
-            print(f"{i}. {context[:150]}...")
+            logger.debug(f"{i}. {context[:150]}...")
 
     except FileNotFoundError:
-        print(
+        logger.warning(
             "No paste.txt file found. Use parse_logs(your_text) to parse any log text."
         )
 
@@ -638,26 +643,26 @@ def process_message_for_eval_debug(message_obj):
     Use extract_contexts_for_eval() for clean output.
     """
 
-    print("=== Starting message parsing ===")
-    print(f"Message type: {type(message_obj)}")
+    logger.debug("=== Starting message parsing ===")
+    logger.debug(f"Message type: {type(message_obj)}")
 
     # Handle different input types
     if hasattr(message_obj, "__iter__") and not isinstance(message_obj, str):
         # It's a list of messages
         parsed_data = parse_langchain_messages(message_obj)
         tool_names = [r["tool"] for r in parsed_data.get("results", [])]
-        print(f"Found tools: {tool_names}")
-        print(f"Extracted {len(parsed_data.get('contexts', []))} contexts")
+        logger.debug(f"Found tools: {tool_names}")
+        logger.info(f"📚 Extracted {len(parsed_data.get('contexts', []))} contexts from message list")
         return parsed_data.get("contexts", [])
 
     elif hasattr(message_obj, "name"):
         # Single LangChain message
-        print(f"Found tool name: {message_obj.name}")
+        logger.debug(f"Found tool name: {message_obj.name}")
         parsed_data = parse_langchain_messages([message_obj])
         contexts = parsed_data.get("contexts", [])
-        print(f"Extracted {len(contexts)} contexts")
+        logger.info(f"📚 Extracted {len(contexts)} contexts from single message")
         return contexts
 
     else:
-        print(f"Unexpected message type: {type(message_obj)}")
+        logger.warning(f"⚠️ Unexpected message type: {type(message_obj)}")
         return []
