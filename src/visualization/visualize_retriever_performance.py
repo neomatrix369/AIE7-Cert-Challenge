@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Load CSV file
-df = pd.read_csv("ragas-evaluation-metrics.csv")
+df = pd.read_csv("../metrics/ragas-evaluation-metrics.csv")
 
 # Get metrics columns
 metrics = [

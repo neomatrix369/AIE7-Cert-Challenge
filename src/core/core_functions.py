@@ -1,18 +1,15 @@
 import os
+import logging
 from getpass import getpass
 from dotenv import load_dotenv
 from langchain_community.document_loaders import CSVLoader
 from tqdm.notebook import tqdm
 import gc
-from joblib import Memory
+from datetime import datetime
 
-from ragas.llms import LangchainLLMWrapper
-from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_openai import ChatOpenAI
 from langchain_openai import OpenAIEmbeddings
 from langchain.prompts import ChatPromptTemplate
-
-from ragas.testset import TestsetGenerator
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import DirectoryLoader, PyMuPDFLoader
@@ -21,22 +18,27 @@ from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
 
-from langgraph.graph import START, StateGraph
+from langgraph.graph import START, END, StateGraph
 from typing_extensions import List, TypedDict
 from langchain_core.documents import Document
 
-memory = Memory(location="./cache")
 
-load_dotenv(dotenv_path=".env")
+# Set up logging with third-party noise suppression
+from src.utils.logging_config import setup_logging
+logger = setup_logging(__name__)
 
+load_dotenv(dotenv_path="../../.env")
+
+DATA_FOLDER = os.getenv('DATA_FOLDER')
+DEFAULT_FOLDER_LOCATION = "../data/"
 
 def check_if_env_var_is_set(env_var_name: str, human_readable_string: str = "API Key"):
     api_key = os.getenv(env_var_name)
 
     if api_key:
-        print(f"{env_var_name} is present")
+        logger.info(f"🔑 {env_var_name} is present")
     else:
-        print(f"{env_var_name} is NOT present, paste key at the prompt:")
+        logger.warning(f"⚠️ {env_var_name} is NOT present, prompting for key")
         os.environ[env_var_name] = getpass.getpass(
             f"Please enter your {human_readable_string}: "
         )
@@ -45,24 +47,31 @@ def check_if_env_var_is_set(env_var_name: str, human_readable_string: str = "API
 check_if_env_var_is_set("OPENAI_API_KEY", "OpenAI API key")
 check_if_env_var_is_set("COHERE_API_KEY", "Cohere API key")
 
-
 #
 # ### Data Preparation
 #
-
-def load_and_prepare_pdf_loan_docs():
-    print("Loading student loan pdfs (knowledge) data...")
-    path = "data/"
-    loader = DirectoryLoader(path, glob="*.pdf", loader_cls=PyMuPDFLoader)
+def load_and_prepare_pdf_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
+    logger.info(f"📁 Current working directory: {os.getcwd()}")
+    if DATA_FOLDER:
+        folder = DATA_FOLDER
+    if not os.path.exists(folder):
+        folder = "../" + DEFAULT_FOLDER_LOCATION
+    logger.info(f"📄 Loading student loan PDFs from: {folder}")
+    loader = DirectoryLoader(folder, glob="*.pdf", loader_cls=PyMuPDFLoader)
     docs = loader.load()
     gc.collect()
-    print(f"Documents count: {len(docs)}")
+    logger.info(f"✅ Loaded {len(docs)} PDF documents")
     return docs
 
 
-def load_and_prepare_csv_loan_docs():
+def load_and_prepare_csv_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
+    logger.info(f"📁 Current working directory: {os.getcwd()}")
+    if DATA_FOLDER:
+        folder = DATA_FOLDER
+    if not os.path.exists(folder):
+        folder = "../" + DEFAULT_FOLDER_LOCATION
     loader = CSVLoader(
-        file_path=f"./data/complaints.csv",
+        file_path=f"{folder}/complaints.csv",
         metadata_columns=[
             "Date received",
             "Product",
@@ -85,7 +94,7 @@ def load_and_prepare_csv_loan_docs():
         ],
     )
 
-    print("Loading student loan complaints data...")
+    logger.info(f"📊 Loading student loan complaints from: {folder}/complaints.csv")
     loan_complaint_data = loader.load()
 
     for doc in loan_complaint_data:
@@ -95,7 +104,7 @@ def load_and_prepare_csv_loan_docs():
 
     ### Cleaning the original documents
 
-    print(f"Original documents count: {len(loan_complaint_data)}")
+    logger.info(f"📋 Original complaint documents count: {len(loan_complaint_data)}")
 
     filtered_docs = []
     for doc in loan_complaint_data:
@@ -113,51 +122,26 @@ def load_and_prepare_csv_loan_docs():
 
         filtered_docs.append(doc)
 
-    print(f"Documents count after filtering: {len(filtered_docs)}")
+    logger.info(f"✅ Filtered complaint documents count: {len(filtered_docs)}")
 
     gc.collect()
     return filtered_docs.copy()
 
 
-# ### Knowledge Graph Based Synthetic Generation
-#
-# Ragas uses a knowledge graph based approach to create data. This is extremely useful as it allows us to create complex queries rather simply. The additional testset complexity allows us to evaluate larger problems more effectively, as systems tend to be very strong on simple evaluation tasks.
-#
-# Let's start by defining our `generator_llm` (which will generate our questions, summaries, and more), and our `generator_embeddings` which will be useful in building our graph.
-
-# ### Abstracted SDG
-#
-# The above method is the full process - but we can shortcut that using the provided abstractions!
-#
-# This will generate our knowledge graph under the hood, and will - from there - generate our personas and scenarios to construct our queries.
-#
-#
-
-@memory.cache
-def generate_golden_master(original_doc, items_to_pick: int = 20, final_size: int = 10):
-    generator_llm = LangchainLLMWrapper(ChatOpenAI(model="gpt-4.1"))
-    generator_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
-    generator = TestsetGenerator(
-        llm=generator_llm, embedding_model=generator_embeddings
-    )
-    golden_master_dataset = generator.generate_with_langchain_docs(
-        original_doc[:items_to_pick], testset_size=final_size
-    )
-    golden_master_dataset.to_pandas()
-    return golden_master_dataset
-
-
 
 def split_documents(documents):
+    logger.info(f"📄 Splitting {len(documents)} documents into chunks (size=750, overlap=100)")
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
-    split_documents = text_splitter.split_documents(docs)
-    len(split_documents)
-    return split_documents
+    split_docs = text_splitter.split_documents(documents)
+    logger.info(f"✅ Created {len(split_docs)} document chunks")
+    return split_docs
 
 
 def get_vector_store(split_documents):
+    logger.info(f"🗃️ Starting Qdrant in-memory database")
     client = QdrantClient(":memory:")
 
+    logger.info(f"📦 Creating Qdrant collection 'loan_data'")
     client.create_collection(
         collection_name="loan_data",
         vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
@@ -170,8 +154,10 @@ def get_vector_store(split_documents):
         embedding=embeddings,
     )
 
+    logger.info(f"⬆️ Adding {len(split_documents)} documents to Qdrant collection")
     # We can now add our documents to our vector store.
     vector_store.add_documents(documents=split_documents)
+    logger.info(f"✅ Qdrant vector store ready with {len(split_documents)} documents")
     return vector_store
 
 
@@ -186,7 +172,9 @@ def get_retriever(vector_store):
 
 
 def retrieve(state, retriever):
+    logger.info(f"🔍 Retrieving documents for question: {state['question'][:100]}...")
     retrieved_docs = retriever.invoke(state["question"])
+    logger.info(f"📚 Retrieved {len(retrieved_docs)} relevant documents")
     return {"context": retrieved_docs}
 
 
@@ -204,6 +192,8 @@ def get_rag_prompt():
 
   ### Context
   {context}
+  
+  Return a confidence score and a reason for the score once as json finished based on the outcome of the query.
   """
 
     return ChatPromptTemplate.from_template(RAG_PROMPT)
@@ -218,12 +208,15 @@ llm = ChatOpenAI(model="gpt-4.1-nano")
 
 # Then we can create a `generate` node!
 
+
 def generate(state):
+    logger.info(f"🤖 Generating response using {len(state['context'])} context documents")
     docs_content = "\n\n".join(doc.page_content for doc in state["context"])
     messages = rag_prompt.format_messages(
         question=state["question"], context=docs_content
     )
     response = llm.invoke(messages)
+    logger.info(f"✅ Generated response with {len(response.content)} characters")
     return {"response": response.content}
 
 
@@ -238,6 +231,10 @@ class State(TypedDict):
     response: str
 
 
-graph_builder = StateGraph(State).add_sequence([retrieve, generate])
+graph_builder = StateGraph(State)
+graph_builder.add_node("retrieve", retrieve)
+graph_builder.add_node("generate", generate)
 graph_builder.add_edge(START, "retrieve")
+graph_builder.add_edge("retrieve", "generate")
+graph_builder.add_edge("generate", END)
 graph = graph_builder.compile()

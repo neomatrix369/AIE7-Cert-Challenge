@@ -13,7 +13,7 @@ import numpy as np
 from collections import defaultdict
 
 
-def load_and_process_data(csv_path="ragas-evaluation-metrics.csv"):
+def load_and_process_data(csv_path="../metrics/ragas-evaluation-metrics.csv"):
     """Load CSV data and calculate averages."""
     data = []
     with open(csv_path, "r") as file:

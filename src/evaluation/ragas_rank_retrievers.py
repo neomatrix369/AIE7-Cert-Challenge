@@ -1,5 +1,10 @@
 import pandas as pd
 import numpy as np
+import logging
+
+# Set up logging with third-party noise suppression
+from src.utils.logging_config import setup_logging
+logger = setup_logging(__name__)
 
 
 class RetrieverRanker:
@@ -447,8 +452,8 @@ class RetrieverRanker:
 
     def print_available_metrics(self):
         """Print information about available metrics in the dataset"""
-        print("📊 AVAILABLE METRICS IN DATASET")
-        print("-" * 40)
+        logger.info("📊 AVAILABLE METRICS IN DATASET")
+        logger.info("-" * 40)
 
         old_metrics = [
             "context_recall",
@@ -465,38 +470,35 @@ class RetrieverRanker:
             "faithful_rate",
         ]
 
-        print("Legacy metrics:")
+        logger.info("Legacy metrics:")
         for metric in old_metrics:
             status = "✓" if metric in self.df.columns else "✗"
-            print(f"  {status} {metric}")
+            logger.info(f"  {status} {metric}")
 
-        print("\nNew metrics:")
+        logger.info("New metrics:")
         for metric in new_metrics:
             status = "✓" if metric in self.df.columns else "✗"
-            print(f"  {status} {metric}")
+            logger.info(f"  {status} {metric}")
 
-        print(f"\nTotal available quality metrics: {len(self.available_metrics)}")
-        print(
-            "Cost metric available:",
-            "✓" if "Avg_Cost_Per_Run" in self.df.columns else "✗",
-        )
+        logger.info(f"Total available quality metrics: {len(self.available_metrics)}")
+        logger.info(f"Cost metric available: {'✓' if 'Avg_Cost_Per_Run' in self.df.columns else '✗'}")
 
 
 def main():
     # Initialize ranker
     ranker = RetrieverRanker("ragas_retriever_raw_stats.csv")
 
-    print("🏆 RETRIEVER RANKING ANALYSIS")
-    print("=" * 60)
+    logger.info("🏆 RETRIEVER RANKING ANALYSIS")
+    logger.info("=" * 60)
 
     # Show available metrics
     ranker.print_available_metrics()
 
     # 1. Overall Rankings (Weighted Algorithm)
-    print("\n\n1. OVERALL RANKINGS (Weighted Algorithm)")
-    print("-" * 45)
+    logger.info("1. OVERALL RANKINGS (Weighted Algorithm)")
+    logger.info("-" * 45)
     rankings = ranker.get_rankings_table("weighted")
-    print(rankings.to_string(index=False))
+    logger.info(f"\n{rankings.to_string(index=False)}")
 
     # 2. Metrics Comparison
     print("\n\n2. DETAILED METRICS COMPARISON")
