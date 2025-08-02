@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  rag-api:
+    build: 
+      context: ../../  # Build from project root to access src/ modules
+      dockerfile: src/backend/Dockerfile
+    ports:
+      - "8000:8000"
+    # environment:
+    #   - OPENAI_API_KEY=${OPENAI_API_KEY}
+    #   - TAVILY_API_KEY=${TAVILY_API_KEY}
+    #   - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+    #   - LANGCHAIN_TRACING_V2:${LANGCHAIN_TRACING_V2}
+    #   - LANGCHAIN_PROJECT:${LANGCHAIN_PROJECT}
+    env_file:
+      - ../../.env  # Load from project root .env (relative to docker-compose.yml location)
+    volumes:
+      - ../../data:/app/data:ro  # Mount data directory as read-only
+      - cache_volume:/app/cache  # Persistent cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  cache_volume:
