@@ -5,6 +5,7 @@ from graph_rag_functions import (
     multi_query_graph,
     parent_document_graph,
 )
+from langchain_core.messages import HumanMessage
 
 
 @tool
