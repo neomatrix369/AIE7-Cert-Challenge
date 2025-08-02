@@ -279,4 +279,7 @@ if __name__ == "__main__":
     logger.info("📋 Available at: http://localhost:8000")
     logger.info("📖 API docs at: http://localhost:8000/docs")
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    # Using the below with reload renders the FastAPI to not load at all
+    # uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    # Hence resorting to the below
+    uvicorn.run(app, host="0.0.0.0", port=8000)
