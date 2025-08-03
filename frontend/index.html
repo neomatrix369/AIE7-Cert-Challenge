@@ -83,35 +83,230 @@
     </div>
 
     <script>
-        // Application state
-        let isLoading = false;
-        let apiStatus = 'unknown';
-        let backendUrl = 'http://localhost:8000'; // Default for local development
+        // Enhanced Console Logging System
+        const logger = {
+            levels: {
+                DEBUG: 0,
+                INFO: 1,
+                WARN: 2,
+                ERROR: 3
+            },
+            currentLevel: 1, // Default to INFO level
+            
+            log(level, category, message, data = null) {
+                if (this.levels[level] < this.currentLevel) return;
+                
+                const timestamp = new Date().toISOString();
+                const prefix = `[${timestamp}] [${level}] [${category}]`;
+                
+                switch (level) {
+                    case 'DEBUG':
+                        console.debug(`🔍 ${prefix}`, message, data || '');
+                        break;
+                    case 'INFO':
+                        console.info(`ℹ️ ${prefix}`, message, data || '');
+                        break;
+                    case 'WARN':
+                        console.warn(`⚠️ ${prefix}`, message, data || '');
+                        break;
+                    case 'ERROR':
+                        console.error(`❌ ${prefix}`, message, data || '');
+                        break;
+                }
+            },
+            
+            debug(category, message, data) { this.log('DEBUG', category, message, data); },
+            info(category, message, data) { this.log('INFO', category, message, data); },
+            warn(category, message, data) { this.log('WARN', category, message, data); },
+            error(category, message, data) { this.log('ERROR', category, message, data); },
+            
+            setLevel(level) {
+                this.currentLevel = this.levels[level];
+                this.info('LOGGER', `Log level set to ${level}`);
+            }
+        };
+
+        // Enhanced Application State Management
+        const appState = {
+            // Core state
+            isLoading: false,
+            apiStatus: 'unknown',
+            backendUrl: 'http://localhost:8000',
+            error: null,
+            
+            // Message management
+            messages: [],
+            messageIdCounter: 0,
+            
+            // UI state
+            lastScrollPosition: 0,
+            autoScroll: true,
+            
+            // Performance tracking
+            lastRequestTime: null,
+            averageResponseTime: 0,
+            requestCount: 0,
+
+            // State update methods
+            setState(updates) {
+                const oldState = { ...this };
+                Object.assign(this, updates);
+                logger.debug('STATE', 'State updated', { 
+                    old: oldState, 
+                    new: { ...this },
+                    changes: updates 
+                });
+                this.notifyStateChange(updates);
+            },
+
+            setLoading(loading, context = '') {
+                this.setState({ isLoading: loading });
+                logger.info('UI', `Loading state: ${loading}`, { context });
+            },
+
+            setError(error, context = '') {
+                this.setState({ error });
+                if (error) {
+                    logger.error('STATE', `Error set: ${error}`, { context });
+                } else {
+                    logger.info('STATE', 'Error cleared', { context });
+                }
+            },
+
+            addMessage(message) {
+                const messageWithId = {
+                    id: ++this.messageIdCounter,
+                    timestamp: new Date(),
+                    ...message
+                };
+                this.messages.push(messageWithId);
+                logger.info('CHAT', `Message added: ${message.isUser ? 'USER' : 'BOT'}`, {
+                    messageId: messageWithId.id,
+                    contentLength: message.content.length,
+                    metadata: message.metadata
+                });
+                this.notifyStateChange({ messages: this.messages });
+                return messageWithId;
+            },
+
+            updatePerformanceMetrics(responseTime) {
+                this.requestCount++;
+                this.averageResponseTime = ((this.averageResponseTime * (this.requestCount - 1)) + responseTime) / this.requestCount;
+                logger.info('PERFORMANCE', `Request completed`, {
+                    responseTime: `${responseTime}ms`,
+                    averageResponseTime: `${this.averageResponseTime.toFixed(2)}ms`,
+                    totalRequests: this.requestCount
+                });
+            },
+
+            notifyStateChange(changes) {
+                // Hook for future state change listeners
+                if (changes.messages && this.autoScroll) {
+                    requestAnimationFrame(() => scrollToBottom());
+                }
+            }
+        };
 
         // Auto-detect backend URL in Docker environment
         if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            // In Docker container, try to use the service name
-            backendUrl = 'http://rag-api:8000';
+            appState.setState({ backendUrl: 'http://rag-api:8000' });
+            logger.info('CONFIG', 'Docker environment detected, using service name for backend');
         }
 
-        // DOM elements
-        const messagesContainer = document.getElementById('messagesContainer');
-        const messageInput = document.getElementById('messageInput');
-        const sendButton = document.getElementById('sendButton');
-        const apiStatusElement = document.getElementById('apiStatus');
-        const welcomeTimeElement = document.getElementById('welcomeTime');
+        // DOM elements with enhanced references
+        const domElements = {
+            messagesContainer: null,
+            messageInput: null,
+            sendButton: null,
+            apiStatusElement: null,
+            welcomeTimeElement: null,
+            messagesEndRef: null, // Virtual ref for auto-scrolling
+            
+            init() {
+                this.messagesContainer = document.getElementById('messagesContainer');
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.apiStatusElement = document.getElementById('apiStatus');
+                this.welcomeTimeElement = document.getElementById('welcomeTime');
+                
+                // Create virtual scroll target
+                this.messagesEndRef = document.createElement('div');
+                this.messagesEndRef.id = 'messages-end-ref';
+                this.messagesContainer.appendChild(this.messagesEndRef);
+                
+                logger.info('DOM', 'DOM elements initialized successfully');
+            }
+        };
 
-        // Set welcome message time
-        welcomeTimeElement.textContent = new Date().toLocaleTimeString();
+        // Enhanced scroll management
+        function scrollToBottom(behavior = 'smooth') {
+            try {
+                if (domElements.messagesEndRef && appState.autoScroll) {
+                    domElements.messagesEndRef.scrollIntoView({ 
+                        behavior,
+                        block: 'end'
+                    });
+                    logger.debug('UI', 'Scrolled to bottom', { behavior });
+                }
+            } catch (error) {
+                logger.warn('UI', 'Failed to scroll to bottom', error);
+            }
+        }
 
-        // Check API health on page load
-        checkApiHealth();
+        // Handle scroll events to manage auto-scroll behavior
+        function handleScroll() {
+            const container = domElements.messagesContainer;
+            const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+            
+            if (appState.autoScroll !== isNearBottom) {
+                appState.setState({ autoScroll: isNearBottom });
+                logger.debug('UI', `Auto-scroll ${isNearBottom ? 'enabled' : 'disabled'}`);
+            }
+        }
 
-        // Event listeners
-        sendButton.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keydown', handleKeyPress);
+        // Initialize application
+        function initializeApp() {
+            logger.info('APP', 'Initializing Federal Student Loan Assistant Frontend');
+            
+            // Initialize DOM elements
+            domElements.init();
+            
+            // Set welcome message time
+            domElements.welcomeTimeElement.textContent = new Date().toLocaleTimeString();
+            
+            // Add scroll listener for auto-scroll management
+            domElements.messagesContainer.addEventListener('scroll', handleScroll);
+            
+            // Check API health on page load
+            checkApiHealth();
+            
+            logger.info('APP', 'Application initialized successfully');
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
+
+        // Enhanced event listeners with error handling
+        function setupEventListeners() {
+            try {
+                domElements.sendButton.addEventListener('click', sendMessage);
+                domElements.messageInput.addEventListener('keydown', handleKeyPress);
+                logger.info('EVENTS', 'Event listeners setup successfully');
+            } catch (error) {
+                logger.error('EVENTS', 'Failed to setup event listeners', error);
+            }
+        }
 
         function handleKeyPress(event) {
+            logger.debug('INPUT', `Key pressed: ${event.key}`, { 
+                shiftKey: event.shiftKey, 
+                inputLength: domElements.messageInput.value.length 
+            });
+            
             if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
                 sendMessage();
@@ -119,40 +314,80 @@
         }
 
         async function checkApiHealth() {
+            logger.info('API', 'Checking backend API health', { url: appState.backendUrl });
+            
             try {
-                const response = await fetch(`${backendUrl}/health`);
+                const startTime = performance.now();
+                const response = await fetch(`${appState.backendUrl}/health`);
+                const responseTime = performance.now() - startTime;
+                
+                logger.info('API', `Health check response received`, { 
+                    status: response.status, 
+                    responseTime: `${responseTime.toFixed(2)}ms` 
+                });
+                
                 const data = await response.json();
-                apiStatus = data.status === 'healthy' ? 'healthy' : 'unhealthy';
+                const newStatus = data.status === 'healthy' ? 'healthy' : 'unhealthy';
+                
+                appState.setState({ apiStatus: newStatus });
                 updateApiStatus();
+                
+                logger.info('API', `Backend status: ${newStatus}`, data);
+                
             } catch (error) {
+                logger.warn('API', 'Primary health check failed', { 
+                    url: appState.backendUrl, 
+                    error: error.message 
+                });
+                
                 // If Docker service name fails, try localhost as fallback
-                if (backendUrl !== 'http://localhost:8000') {
-                    backendUrl = 'http://localhost:8000';
+                if (appState.backendUrl !== 'http://localhost:8000') {
+                    logger.info('API', 'Attempting fallback to localhost');
+                    
+                    appState.setState({ backendUrl: 'http://localhost:8000' });
+                    
                     try {
-                        const fallbackResponse = await fetch(`${backendUrl}/health`);
+                        const fallbackStartTime = performance.now();
+                        const fallbackResponse = await fetch(`${appState.backendUrl}/health`);
+                        const fallbackResponseTime = performance.now() - fallbackStartTime;
+                        
+                        logger.info('API', `Fallback health check response`, { 
+                            status: fallbackResponse.status, 
+                            responseTime: `${fallbackResponseTime.toFixed(2)}ms` 
+                        });
+                        
                         const fallbackData = await fallbackResponse.json();
-                        apiStatus = fallbackData.status === 'healthy' ? 'healthy' : 'unhealthy';
+                        const fallbackStatus = fallbackData.status === 'healthy' ? 'healthy' : 'unhealthy';
+                        
+                        appState.setState({ apiStatus: fallbackStatus });
                         updateApiStatus();
+                        
+                        logger.info('API', `Fallback successful, backend status: ${fallbackStatus}`, fallbackData);
                         return;
+                        
                     } catch (fallbackError) {
-                        // Both failed
+                        logger.error('API', 'Fallback health check also failed', fallbackError);
                     }
                 }
-                apiStatus = 'unhealthy';
+                
+                appState.setState({ apiStatus: 'unhealthy' });
                 updateApiStatus();
+                logger.error('API', 'All health checks failed, marking as unhealthy');
             }
         }
 
         function updateApiStatus() {
-            if (apiStatus === 'healthy') {
-                apiStatusElement.innerHTML = `
+            logger.debug('UI', `Updating API status indicator`, { status: appState.apiStatus });
+            
+            if (appState.apiStatus === 'healthy') {
+                domElements.apiStatusElement.innerHTML = `
                     <svg class="h-4 w-4 text-green-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <span class="text-sm text-green-200">Online</span>
                 `;
             } else {
-                apiStatusElement.innerHTML = `
+                domElements.apiStatusElement.innerHTML = `
                     <svg class="h-4 w-4 text-red-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
@@ -162,16 +397,44 @@
         }
 
         async function sendMessage() {
-            const message = messageInput.value.trim();
-            if (!message || isLoading) return;
+            const message = domElements.messageInput.value.trim();
+            
+            logger.info('CHAT', 'Send message initiated', { 
+                messageLength: message.length,
+                isLoading: appState.isLoading,
+                hasMessage: !!message
+            });
+            
+            if (!message || appState.isLoading) {
+                logger.warn('CHAT', 'Send message blocked', { 
+                    reason: !message ? 'empty_message' : 'already_loading' 
+                });
+                return;
+            }
+
+            // Clear any previous errors
+            appState.setError(null, 'send_message_start');
 
             // Add user message
-            addMessage(message, true);
-            messageInput.value = '';
-            setLoading(true);
+            const userMessage = appState.addMessage({
+                content: message,
+                isUser: true
+            });
+            
+            renderMessage(userMessage);
+            domElements.messageInput.value = '';
+            appState.setLoading(true, 'sending_user_message');
+
+            const requestStartTime = performance.now();
+            appState.setState({ lastRequestTime: requestStartTime });
 
             try {
-                const response = await fetch(`${backendUrl}/ask`, {
+                logger.info('API', 'Sending request to backend', { 
+                    url: `${appState.backendUrl}/ask`,
+                    questionLength: message.length 
+                });
+
+                const response = await fetch(`${appState.backendUrl}/ask`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -182,25 +445,70 @@
                     })
                 });
 
+                const requestEndTime = performance.now();
+                const requestDuration = requestEndTime - requestStartTime;
+
+                logger.info('API', 'Response received from backend', { 
+                    status: response.status,
+                    statusText: response.statusText,
+                    requestDuration: `${requestDuration.toFixed(2)}ms`
+                });
+
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 const data = await response.json();
                 
+                logger.info('API', 'Response data parsed successfully', {
+                    answerLength: data.answer?.length || 0,
+                    sourcesCount: data.sources_count,
+                    toolsUsed: data.tools_used?.length || 0,
+                    performanceMetrics: data.performance_metrics
+                });
+                
+                // Update performance tracking
+                appState.updatePerformanceMetrics(requestDuration);
+                
                 // Add bot response
-                addMessage(data.answer, false, {
-                    sources: data.sources_count,
-                    processingTime: data.performance_metrics?.total_processing_time 
-                        ? data.performance_metrics.total_processing_time.toFixed(2) + 's'
-                        : undefined
+                const botMessage = appState.addMessage({
+                    content: data.answer,
+                    isUser: false,
+                    metadata: {
+                        sources: data.sources_count,
+                        processingTime: data.performance_metrics?.total_processing_time 
+                            ? data.performance_metrics.total_processing_time.toFixed(2) + 's'
+                            : undefined,
+                        toolsUsed: data.tools_used,
+                        sourceDetails: data.source_details
+                    }
                 });
 
+                renderMessage(botMessage);
+                logger.info('CHAT', 'Message exchange completed successfully');
+
             } catch (error) {
-                console.error('Error:', error);
-                addMessage(`Sorry, I encountered an error while processing your question. Please make sure the backend API is running at ${backendUrl} and try again.`, false);
+                const requestEndTime = performance.now();
+                const requestDuration = requestEndTime - requestStartTime;
+                
+                logger.error('API', 'Request failed', { 
+                    error: error.message,
+                    requestDuration: `${requestDuration.toFixed(2)}ms`,
+                    url: appState.backendUrl
+                });
+
+                appState.setError(error.message, 'api_request_failed');
+                
+                const errorMessage = appState.addMessage({
+                    content: `Sorry, I encountered an error while processing your question. Please make sure the backend API is running at ${appState.backendUrl} and try again.\n\nError: ${error.message}`,
+                    isUser: false,
+                    metadata: { isError: true }
+                });
+
+                renderMessage(errorMessage);
+                
             } finally {
-                setLoading(false);
+                appState.setLoading(false, 'send_message_complete');
             }
         }
 
