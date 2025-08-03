@@ -22,6 +22,7 @@ interface Message {
   processingTime?: string
   performance_metrics?: PerformanceMetrics
   source_details?: any[]
+  tools_used?: string[]
   focus?: string; // Added focus to Message interface
 }
 
@@ -145,7 +146,37 @@ interface ApiResponse {
   message?: string
   performance_metrics?: PerformanceMetrics
   source_details?: any[]
+  tools_used?: string[]
 }
+
+// Helper function to convert technical tool names to human-readable names
+const getHumanReadableToolName = (toolName: string): string => {
+  const toolNameMap: { [key: string]: string } = {
+    // RAG Tools - Federal Student Loan Knowledge Base
+    'ask_parent_document_llm_tool': '📄 Advanced Document Search',
+    'ask_contextual_compression_llm_tool': '🎯 Precision Context Filter', 
+    'ask_multi_query_llm_tool': '🔍 Comprehensive Query Expansion',
+    'ask_naive_llm_tool': '📚 Standard Document Search',
+
+    // External Search Tools
+    'tavily_search': '🌐 General Web Search',
+    'studentaid_search': '🏛️ Federal Student Aid Database',
+    'mohela_search': '🏢 MOHELA Servicer Portal',
+
+    // Alternative naming patterns that might be used
+    'parent_document': '📄 Advanced Document Search',
+    'contextual_compression': '🎯 Precision Context Filter',
+    'multi_query': '🔍 Comprehensive Query Expansion',
+    'naive': '📚 Standard Document Search',
+    'basic_search': '📚 Standard Document Search',
+    'advanced_search': '📄 Advanced Document Search',
+    'web_search': '🌐 General Web Search'
+  };
+
+  // Handle variations and clean up the tool name
+  const cleanedName = toolName.toLowerCase().replace(/[_-]/g, '_');
+  return toolNameMap[cleanedName] || toolNameMap[toolName] || `🔧 ${toolName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`;
+};
 
 export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([])
@@ -262,6 +293,15 @@ export default function ChatInterface() {
 
       const data: ApiResponse = await response.json()
       console.log('Frontend: Backend Response Received:', data)
+      console.log('Frontend: Performance Metrics:', data.performance_metrics)
+      console.log('Frontend: Tools Used:', data.tools_used)
+
+      // Debug: Test tool name mapping
+      if (data.tools_used) {
+        console.log('Frontend: Human-readable tool names:',
+          data.tools_used.map(tool => `${tool} → ${getHumanReadableToolName(tool)}`)
+        )
+      }
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -273,7 +313,8 @@ export default function ChatInterface() {
           ? `${(data.performance_metrics.response_time_ms / 1000).toFixed(2)}s` 
           : undefined,
         performance_metrics: data.performance_metrics,
-        source_details: data.source_details
+        source_details: data.source_details,
+        tools_used: data.tools_used
       }
 
       setMessages(prev => [...prev, botMessage])
@@ -431,16 +472,45 @@ export default function ChatInterface() {
                     <div className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-full p-1 transition-colors duration-200 cursor-pointer">
                       <Info className="h-3 w-3 text-white" />
                     </div>
-                    <div className="absolute right-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 text-xs text-gray-700 dark:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
-                      <h3 className="font-semibold mb-1">Performance & Source Details</h3>
-                      {message.performance_metrics.response_time_ms && <p>Response Time: {(message.performance_metrics.response_time_ms / 1000).toFixed(2)}s</p>}
-                      {message.performance_metrics.retrieval_time_ms && <p>Retrieval Time: {(message.performance_metrics.retrieval_time_ms / 1000).toFixed(2)}s</p>}
-                      {message.performance_metrics.generation_time_ms && <p>Generation Time: {(message.performance_metrics.generation_time_ms / 1000).toFixed(2)}s</p>}
-                      {message.performance_metrics.tokens_used && <p>Tokens Used: {message.performance_metrics.tokens_used}</p>}
+                    <div className="absolute right-0 bottom-full mb-2 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 text-xs text-gray-700 dark:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                      <h3 className="font-semibold mb-2">Performance & Processing Details</h3>
+
+                      {/* Performance Metrics */}
+                      <div className="mb-2">
+                        <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">⏱️ Performance</h4>
+                        {message.performance_metrics.response_time_ms && <p>Response Time: {(message.performance_metrics.response_time_ms / 1000).toFixed(2)}s</p>}
+                        {message.performance_metrics.retrieval_time_ms && <p>Retrieval Time: {(message.performance_metrics.retrieval_time_ms / 1000).toFixed(2)}s</p>}
+                        {message.performance_metrics.generation_time_ms && <p>Generation Time: {(message.performance_metrics.generation_time_ms / 1000).toFixed(2)}s</p>}
+                      </div>
+
+                      {/* Token Usage */}
+                      {(message.performance_metrics.input_tokens || message.performance_metrics.output_tokens || message.performance_metrics.tokens_used) && (
+                        <div className="mb-2">
+                          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">🔢 Tokens</h4>
+                          <p>
+                            {message.performance_metrics.input_tokens && message.performance_metrics.output_tokens ? (
+                              <>📥 {message.performance_metrics.input_tokens} | 📤 {message.performance_metrics.output_tokens} | 💯 {message.performance_metrics.tokens_used || (message.performance_metrics.input_tokens + message.performance_metrics.output_tokens)}</>
+                            ) : message.performance_metrics.tokens_used ? (
+                              <>💯 {message.performance_metrics.tokens_used} <span className="text-yellow-600 dark:text-yellow-400">(breakdown unavailable)</span></>
+                            ) : null}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Tools Used */}
+                      {message.tools_used && message.tools_used.length > 0 && (
+                        <div className="mb-2">
+                          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">🛠️ Tools Used</h4>
+                          {message.tools_used.map((tool, index) => (
+                            <p key={index}>{getHumanReadableToolName(tool)}</p>
+                          ))}
+                        </div>
+                      )}
+                      {/* Sources */}
                       {message.source_details && message.source_details.length > 0 && (
                         <div className="mt-2 pt-2 border-t border-gray-300 dark:border-gray-600">
-                          <h4 className="font-semibold">Sources:</h4>
-                          <ul className="list-disc list-inside">
+                          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">📚 Sources</h4>
+                          <ul className="list-disc list-inside max-h-32 overflow-y-auto">
                             {message.source_details.map((source, index) => (
                               <li key={index} className="truncate">
                                 {typeof source === 'object' && source.relevance_score !== undefined && source.relevance_score > 0 ? (
