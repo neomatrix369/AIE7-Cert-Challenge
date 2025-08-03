@@ -63,13 +63,22 @@ export default function ChatInterface() {
       const response = await fetch('http://localhost:8000/health')
       const data = await response.json()
       setApiStatus(data.status === 'healthy' ? 'healthy' : 'unhealthy')
+      console.log('API Health Check: ', data.status)
     } catch (error) {
       setApiStatus('unhealthy')
+      console.error('API Health Check Failed: ', error);
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        console.error('Details: Network error or backend is not running.');
+      } else {
+        console.error(`Details: ${String(error)}`);
+      }
     }
   }
 
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return
+
+    console.log('Frontend: User message sent', inputMessage)
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -83,6 +92,7 @@ export default function ChatInterface() {
     setIsLoading(true)
 
     try {
+      console.log('Frontend: Sending request to backend /ask endpoint')
       const response = await fetch('http://localhost:8000/ask', {
         method: 'POST',
         headers: {
@@ -95,11 +105,21 @@ export default function ChatInterface() {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        let errorDetail = 'Unknown error';
+        try {
+          const errorBody = await response.json();
+          errorDetail = errorBody.detail || JSON.stringify(errorBody);
+        } catch (parseError) {
+          errorDetail = response.statusText || 'Could not parse error response';
+        }
+        console.error(
+          `Frontend: Backend response not OK. Status: ${response.status}, Details: ${errorDetail}`
+        );
+        throw new Error(`HTTP error! Status: ${response.status}, Details: ${errorDetail}`);
       }
 
       const data: ApiResponse = await response.json()
-      console.log('Backend Response:', data)
+      console.log('Frontend: Backend Response Received:', data)
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -115,16 +135,28 @@ export default function ChatInterface() {
       }
 
       setMessages(prev => [...prev, botMessage])
+      console.log('Frontend: Bot message displayed')
     } catch (error) {
+      console.error('Frontend: Error during message sending:', error);
+      let errorMessageText = 'Sorry, I encountered an error while processing your question.';
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        errorMessageText += '\n\nThis usually means the backend server is not running or is inaccessible.\nPlease ensure the backend API is running on http://localhost:8000.';
+      } else if (error instanceof Error) {
+        errorMessageText += `\n\nDetails: ${error.message}`;
+      } else {
+        errorMessageText += `\n\nDetails: ${String(error)}`;
+      }
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: 'Sorry, I encountered an error while processing your question. Please make sure the backend API is running on localhost:8000 and try again.',
+        content: errorMessageText,
         isUser: false,
         timestamp: new Date()
       }
       setMessages(prev => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
+      console.log('Frontend: Loading state set to false')
     }
   }
 
@@ -163,7 +195,7 @@ export default function ChatInterface() {
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`relative max-w-3xl rounded-lg p-4 shadow-md ${message.isUser ? 'bg-[var(--user-message-bg-light)] dark:bg-[var(--user-message-bg-dark)] text-white' : 'bg-[var(--bot-message-bg-light)] dark:bg-[var(--bot-message-bg-dark)] text-[var(--foreground-light)] dark:text-[var(--foreground-dark)] border border-[var(--border-light)] dark:border-[var(--border-dark)]'}`}> 
+                className={`relative max-w-3xl rounded-lg p-4 shadow-md ${message.isUser ? 'bg-[var(--user-message-bg-light)] dark:bg-[var(--user-message-bg-dark)] text-white' : 'bg-[var(--bot-message-bg-light)] dark:bg-[var(--bot-message-bg-dark)] text-[var(--foreground-light)] dark:text-[var(--foreground-dark)] border border-[var(--border-light)] dark:border-[var(--border-dark)]'}`}>
                 <div className="whitespace-pre-wrap">{message.content}</div>
                 <div className="flex items-center justify-between mt-2 text-xs opacity-70">
                   <span>{message.timestamp.toLocaleTimeString()}</span>

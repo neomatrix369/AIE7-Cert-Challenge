@@ -15,32 +15,32 @@ from langgraph.graph import START, END, StateGraph
 from langchain_core.documents import Document
 from typing_extensions import List, TypedDict
 
-from joblib import Memory
-
-CACHE_FOLDER = os.getenv("CACHE_FOLDER")
-cache_folder = "./cache"
-if CACHE_FOLDER:
-    cache_folder = CACHE_FOLDER
-memory = Memory(location=cache_folder)
-
-from datetime import datetime
-
 from dotenv import load_dotenv
+load_dotenv(dotenv_path="../../.env")
 
-from src.core.core_functions import (
-    load_and_prepare_pdf_loan_docs,
-    load_and_prepare_csv_loan_docs,
-)
+from joblib import Memory
 
 # Set up logging with third-party noise suppression
 from src.utils.logging_config import setup_logging
 
 logger = setup_logging(__name__)
 
-load_dotenv(dotenv_path="../../.env")
+CACHE_FOLDER = os.getenv("CACHE_FOLDER")
+cache_folder = "./cache"
+if CACHE_FOLDER:
+    cache_folder = CACHE_FOLDER
+memory = Memory(location=cache_folder)
+logger.info(f"🗄️ Joblib cache location: {cache_folder}")
+
+from datetime import datetime
+
+
+from src.core.core_functions import (
+    load_and_prepare_pdf_loan_docs,
+    load_and_prepare_csv_loan_docs,
+)
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-
 
 @memory.cache
 def get_vectorstore_after_loading_students_loan_data_into_qdrant():
@@ -99,7 +99,7 @@ def naive_retrieve(state):
     return {"context": retrieved_docs}
 
 
-RAG_PROMPT = """\
+RAG_PROMPT = """
 You are a helpful assistant who answers questions based on provided context. You must only use the provided context, and cannot use your own knowledge.
 
 ### Question
@@ -120,7 +120,9 @@ llm = ChatOpenAI(
 )
 
 
+@memory.cache
 def generate(state):
+    logger.info(f"🤖 [Generate Function] Executing LLM call for question: {state['question'][:50]}...")
     logger.info(
         f"🤖 Generating response using {len(state['context'])} context documents"
     )
