@@ -417,13 +417,43 @@ def _extract_rag_tool_contexts(content: str) -> list:
                     if isinstance(result_dict, dict) and "context" in result_dict:
                         context_data = result_dict["context"]
 
-                        # Extract from context list
+                        # Extract from context list with relevance scores
                         if isinstance(context_data, list):
                             for item in context_data:
                                 if hasattr(item, "page_content"):
-                                    contexts.append(item.page_content)
+                                    # Check for relevance score in metadata
+                                    relevance_score = None
+                                    if hasattr(item, "metadata") and item.metadata:
+                                        relevance_score = item.metadata.get(
+                                            "relevance_score"
+                                        )
+
+                                    if relevance_score is not None:
+                                        contexts.append(
+                                            {
+                                                "content": item.page_content,
+                                                "relevance_score": relevance_score,
+                                            }
+                                        )
+                                    else:
+                                        contexts.append(item.page_content)
                                 elif isinstance(item, dict) and "page_content" in item:
-                                    contexts.append(item["page_content"])
+                                    # Check for relevance score in dict metadata
+                                    relevance_score = None
+                                    if "metadata" in item and item["metadata"]:
+                                        relevance_score = item["metadata"].get(
+                                            "relevance_score"
+                                        )
+
+                                    if relevance_score is not None:
+                                        contexts.append(
+                                            {
+                                                "content": item["page_content"],
+                                                "relevance_score": relevance_score,
+                                            }
+                                        )
+                                    else:
+                                        contexts.append(item["page_content"])
                                 elif isinstance(item, str) and len(item.strip()) > 30:
                                     contexts.append(item.strip())
                         return contexts

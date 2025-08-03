@@ -2,14 +2,16 @@ version: '3.8'
 
 services:
   frontend:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
     volumes:
-      - .:/app/frontend  # Mount frontend files for live development
+      - .:/app
+      - /app/node_modules
     restart: unless-stopped
+    command: npm run dev
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
@@ -17,4 +19,4 @@ services:
       retries: 3
       start_period: 10s
     environment:
-      - BACKEND_URL=http://rag-api:8000  # Backend service discovery via container name
+      - BACKEND_URL=http://rag-api:8000
