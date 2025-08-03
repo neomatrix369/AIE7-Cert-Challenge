@@ -28,7 +28,7 @@ from src.evaluation.tool_calls_parser_for_eval import (
     process_agent_response,
     build_performance_metrics,
 )
-from get_api_info_details import get_api_info_details
+from src.utils.api_info_details import get_api_info_details
 
 # Load environment variables
 load_dotenv(dotenv_path=".env")
