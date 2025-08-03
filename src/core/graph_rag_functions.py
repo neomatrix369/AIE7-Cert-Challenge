@@ -102,11 +102,13 @@ def naive_retrieve(state):
 
     # Add relevance scores as metadata for each document
     for i, (doc, score) in enumerate(docs_with_scores):
-        if not hasattr(retrieved_docs[i], 'metadata'):
+        if not hasattr(retrieved_docs[i], "metadata"):
             retrieved_docs[i].metadata = {}
-        retrieved_docs[i].metadata['relevance_score'] = float(score)
+        retrieved_docs[i].metadata["relevance_score"] = float(score)
 
-    logger.info(f"📚 [Naive] Retrieved {len(retrieved_docs)} documents with relevance scores")
+    logger.info(
+        f"📚 [Naive] Retrieved {len(retrieved_docs)} documents with relevance scores"
+    )
     return {"context": retrieved_docs}
 
 
@@ -277,7 +279,9 @@ def parent_document_retrieve(state):
     logger.info(f"child_docs_with_scores: {child_docs_with_scores}")
 
     # Get the parent documents using the retriever
-    retrieved_docs = parent_document_retriever.similarity_search_with_score(state["question"])
+    retrieved_docs = parent_document_retriever.similarity_search_with_score(
+        state["question"]
+    )
     logger.info(f"parent_docs_with_scores: {retrieved_docs}")
 
     # Map child chunk scores to parent documents
@@ -291,14 +295,14 @@ def parent_document_retrieve(state):
 
     # Add relevance scores to parent documents
     for doc in retrieved_docs:
-        if not hasattr(doc, 'metadata'):
+        if not hasattr(doc, "metadata"):
             doc.metadata = {}
         # Find the best matching child score or use a default
         best_score = 0.0
         for content_key, score in child_score_map.items():
             if content_key in doc.page_content:
                 best_score = max(best_score, score)
-        doc.metadata['relevance_score'] = best_score
+        doc.metadata["relevance_score"] = best_score
 
     logger.info(
         f"📚 [Parent Document] Retrieved {len(retrieved_docs)} full documents with relevance scores"
