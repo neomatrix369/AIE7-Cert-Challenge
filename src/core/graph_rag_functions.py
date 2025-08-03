@@ -16,6 +16,7 @@ from langchain_core.documents import Document
 from typing_extensions import List, TypedDict
 
 from dotenv import load_dotenv
+
 load_dotenv(dotenv_path="../../.env")
 
 from joblib import Memory
@@ -41,6 +42,7 @@ from src.core.core_functions import (
 )
 
 embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+
 
 @memory.cache
 def get_vectorstore_after_loading_students_loan_data_into_qdrant():
@@ -121,8 +123,15 @@ llm = ChatOpenAI(
 
 
 @memory.cache
+def invoke_llm(messages):
+    """Extracted method for LLM invocation"""
+    return llm.invoke(messages)
+
+
 def generate(state):
-    logger.info(f"🤖 [Generate Function] Executing LLM call for question: {state['question'][:50]}...")
+    logger.info(
+        f"🤖 [Generate Function] Executing LLM call for question: {state['question'][:50]}..."
+    )
     logger.info(
         f"🤖 Generating response using {len(state['context'])} context documents"
     )
@@ -130,7 +139,7 @@ def generate(state):
     messages = rag_prompt.format_messages(
         question=state["question"], context=docs_content
     )
-    response = llm.invoke(messages)
+    response = invoke_llm(messages)
     logger.info(f"✅ Generated response with {len(response.content)} characters")
     return {"response": response.content}
 
