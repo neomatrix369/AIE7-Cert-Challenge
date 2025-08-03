@@ -187,6 +187,10 @@ export default function ChatInterface() {
   const [showPersonaSelection, setShowPersonaSelection] = useState(true)
   const [showExampleQuestionsSlider, setShowExampleQuestionsSlider] = useState(true) // New state for slider
   const [selectedQuestionFocus, setSelectedQuestionFocus] = useState<string | null>(null); // New state for question focus
+  
+  // Chat session persistence - store messages for each persona
+  const [chatSessions, setChatSessions] = useState<{ [personaId: string]: Message[] }>({})
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -201,14 +205,43 @@ export default function ChatInterface() {
     checkApiHealth()
   }, [])
 
+  // Save messages to current persona's session whenever messages change
+  useEffect(() => {
+    if (selectedPersona && messages.length > 0) {
+      setChatSessions(prev => ({
+        ...prev,
+        [selectedPersona.id]: messages
+      }))
+    }
+  }, [messages, selectedPersona])
+
   const selectPersona = (persona: Persona) => {
+    // Save current messages to the current persona's session (if any)
+    if (selectedPersona) {
+      setChatSessions(prev => ({
+        ...prev,
+        [selectedPersona.id]: messages
+      }))
+    }
+    
+    // Load saved messages for the new persona (or empty array)
+    const savedMessages = chatSessions[persona.id] || []
+    
     setSelectedPersona(persona)
     setShowPersonaSelection(false)
-    setMessages([])
+    setMessages(savedMessages)
     setShowExampleQuestionsSlider(true) // Show slider when persona is selected
   }
 
   const resetPersona = () => {
+    // Save current messages to the current persona's session before resetting
+    if (selectedPersona) {
+      setChatSessions(prev => ({
+        ...prev,
+        [selectedPersona.id]: messages
+      }))
+    }
+    
     setSelectedPersona(null)
     setShowPersonaSelection(true)
     setMessages([])
@@ -389,11 +422,21 @@ export default function ChatInterface() {
                 <button
                   key={persona.id}
                   onClick={() => selectPersona(persona)}
-                  className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-lg hover:scale-105 text-left ${persona.color}`}
+                  className={`p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-lg hover:scale-105 text-left relative ${persona.color}`}
                 >
+                  {chatSessions[persona.id] && chatSessions[persona.id].length > 0 && (
+                    <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                      {chatSessions[persona.id].length} msgs
+                    </div>
+                  )}
                   <div className="text-3xl mb-2">{persona.emoji}</div>
                   <h3 className="font-semibold text-lg mb-1">{persona.name}</h3>
-                  <p className="text-sm opacity-80">{persona.description}</p>
+                  <p className="text-sm opacity-80">
+                    {chatSessions[persona.id] && chatSessions[persona.id].length > 0 
+                      ? `${persona.description} • Continue conversation`
+                      : persona.description
+                    }
+                  </p>
                 </button>
               ))}
             </div>
@@ -406,8 +449,16 @@ export default function ChatInterface() {
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">{selectedPersona.emoji}</span>
                     <div>
-                      <span className="font-medium text-blue-900">Welcome, <b>{selectedPersona.name}</b>!</span>
-                      <p className="text-sm text-blue-700">I'm here to help with federal student loan questions tailored to your situation.</p>
+                      <span className="font-medium text-blue-900">
+                        {messages.length > 0 ? `Welcome back, ` : `Welcome, `}
+                        <b>{selectedPersona.name}</b>!
+                      </span>
+                      <p className="text-sm text-blue-700">
+                        {messages.length > 0 
+                          ? `Continuing your conversation (${messages.length} message${messages.length !== 1 ? 's' : ''})`
+                          : `I'm here to help with federal student loan questions tailored to your situation.`
+                        }
+                      </p>
                     </div>
                   </div>
                   <button
