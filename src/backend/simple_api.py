@@ -91,7 +91,7 @@ class StudentLoanResponse(BaseModel):
     message: Optional[str] = None
 
     # Raw data from LLM pipeline
-    source_details: List[str]  # Raw contexts from extract_contexts_for_eval
+    source_details: List[dict]  # Contexts with relevance scores from extract_contexts_for_eval
     tools_used: List[str]  # Tools/retrievers used during processing
     performance_metrics: dict  # Basic timing measurements
 
@@ -239,13 +239,28 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
             retrieval_method="parent_document",
         )
 
+        # Format source details with relevance scores
+        formatted_source_details = []
+        for context in contexts or []:
+            if isinstance(context, dict) and "content" in context:
+                # Context already has relevance score
+                formatted_source_details.append({
+                    "content": context["content"],
+                    "relevance_score": context.get("relevance_score", 0.0)
+                })
+            elif isinstance(context, str):
+                # Plain string context, no relevance score available
+                formatted_source_details.append({
+                    "content": context,
+                    "relevance_score": 0.0
+                })
+
         return StudentLoanResponse(
             answer=answer,
             sources_count=sources_count,
             success=True,
             message="Question processed successfully",
-            source_details=contexts
-            or [],  # Raw contexts from extract_contexts_for_eval
+            source_details=formatted_source_details,  # Formatted contexts with relevance scores
             tools_used=tools_used or [],  # Tools/retrievers used during processing
             performance_metrics=performance_metrics,
         )
