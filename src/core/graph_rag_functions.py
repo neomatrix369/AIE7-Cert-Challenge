@@ -96,8 +96,17 @@ naive_retriever = vector_store.as_retriever(search_kwargs={"k": 5})
 
 def naive_retrieve(state):
     logger.info(f"🔍 [Naive] Retrieving docs for: {state['question'][:100]}...")
-    retrieved_docs = naive_retriever.invoke(state["question"])
-    logger.info(f"📚 [Naive] Retrieved {len(retrieved_docs)} documents")
+    # Use similarity_search_with_score to get relevance scores
+    docs_with_scores = vector_store.similarity_search_with_score(state["question"], k=5)
+    retrieved_docs = [doc for doc, score in docs_with_scores]
+
+    # Add relevance scores as metadata for each document
+    for i, (doc, score) in enumerate(docs_with_scores):
+        if not hasattr(retrieved_docs[i], 'metadata'):
+            retrieved_docs[i].metadata = {}
+        retrieved_docs[i].metadata['relevance_score'] = float(score)
+
+    logger.info(f"📚 [Naive] Retrieved {len(retrieved_docs)} documents with relevance scores")
     return {"context": retrieved_docs}
 
 
@@ -260,9 +269,39 @@ def parent_document_retrieve(state):
     logger.info(
         f"🔍 [Parent Document] Retrieving docs for: {state['question'][:100]}..."
     )
-    retrieved_docs = parent_document_retriever.invoke(state["question"])
+
+    # Get child chunks with scores from the vectorstore first
+    child_docs_with_scores = parent_document_vectorstore.similarity_search_with_score(
+        state["question"], k=5
+    )
+    logger.info(f"child_docs_with_scores: {child_docs_with_scores}")
+
+    # Get the parent documents using the retriever
+    retrieved_docs = parent_document_retriever.similarity_search_with_score(state["question"])
+    logger.info(f"parent_docs_with_scores: {retrieved_docs}")
+
+    # Map child chunk scores to parent documents
+    # For simplicity, we'll use the highest relevance score from child chunks for each parent
+    child_score_map = {}
+    for child_doc, score in child_docs_with_scores:
+        # Use page_content as a key to match with parent docs
+        content_key = child_doc.page_content[:100]  # First 100 chars as identifier
+        if content_key not in child_score_map:
+            child_score_map[content_key] = float(score)
+
+    # Add relevance scores to parent documents
+    for doc in retrieved_docs:
+        if not hasattr(doc, 'metadata'):
+            doc.metadata = {}
+        # Find the best matching child score or use a default
+        best_score = 0.0
+        for content_key, score in child_score_map.items():
+            if content_key in doc.page_content:
+                best_score = max(best_score, score)
+        doc.metadata['relevance_score'] = best_score
+
     logger.info(
-        f"📚 [Parent Document] Retrieved {len(retrieved_docs)} full documents from child chunks"
+        f"📚 [Parent Document] Retrieved {len(retrieved_docs)} full documents with relevance scores"
     )
     return {"context": retrieved_docs}
 
