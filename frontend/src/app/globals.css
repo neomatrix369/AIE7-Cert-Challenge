@@ -2,26 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background-light: #f8f9fa;
+  --foreground-light: #212529;
+  --primary-light: #007bff;
+  --primary-hover-light: #0056b3;
+  --user-message-bg-light: #007bff;
+  --bot-message-bg-light: #ffffff;
+  --border-light: #dee2e6;
+
+  --background-dark: #121212;
+  --foreground-dark: #e0e0e0;
+  --primary-dark: #4dabf7;
+  --primary-hover-dark: #2196f3;
+  --user-message-bg-dark: #4dabf7;
+  --bot-message-bg-dark: #1e1e1e;
+  --border-dark: #333333;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@media (prefers-color-scheme: light) {
+  body {
+    background-color: var(--background-light);
+    color: var(--foreground-light);
   }
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: var(--background-dark);
+    color: var(--foreground-dark);
+  }
+}
+
+.text-balance {
+  text-wrap: balance;
 }
