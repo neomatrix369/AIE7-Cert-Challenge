@@ -1,37 +1,19 @@
-# Federal Student Loan Assistant Frontend Dockerfile
-FROM python:3.11-slim
+# Frontend Dockerfile
 
-# Set working directory
+# Use an official Node.js runtime as a parent image
+FROM node:18-alpine
+
+# Set the working directory in the container
 WORKDIR /app
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
+# Copy package.json and package-lock.json to the working directory
+COPY package*.json ./
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+# Install any needed packages
+RUN npm install
 
-# Create frontend directory
-RUN mkdir -p /app/frontend
+# Copy the rest of the application files to the working directory
+COPY . .
 
-# Copy frontend files
-COPY index.html /app/frontend/
-COPY serve.py /app/frontend/
-COPY README.md /app/frontend/
-
-# Make serve script executable
-RUN chmod +x /app/frontend/serve.py
-
-# Expose port
+# Expose port 3000
 EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:3000 || exit 1
-
-# Set working directory to frontend
-WORKDIR /app/frontend
-
-# Run the frontend server
-CMD ["python3", "serve.py", "3000"]
