@@ -5,35 +5,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* A more friendly, laid-back theme */
-  --background-light: #f4f7f9;
-  --foreground-light: #333333;
-  --primary-light: #5b86e5;
-  --primary-hover-light: #4a6fcf;
-  --user-message-bg-light: #5b86e5;
-  --bot-message-bg-light: #ffffff;
-  --border-light: #e0e0e0;
-
-  --background-dark: #1a202c;
-  --foreground-dark: #e2e8f0;
-  --primary-dark: #63b3ed;
-  --primary-hover-dark: #4299e1;
-  --user-message-bg-dark: #63b3ed;
-  --bot-message-bg-dark: #2d3748;
-  --border-dark: #4a5568;
+  /* White Theme Only */
+  --background: #ffffff; /* Pure white */
+  --foreground: #333333; /* Standard dark grey for text */
+  --primary: #2563eb; /* Darker blue for better contrast */
+  --primary-hover: #1d4ed8; /* Even darker blue on hover */
+  --user-message-bg: #e6f7ff; /* Very light blue for user messages */
+  --bot-message-bg: #f8f8f8; /* Off-white for bot messages */
+  --border: #e0e0e0; /* Light grey for borders */
 }
 
 body {
   font-family: 'Inter', sans-serif;
-  color: var(--foreground-light);
-  background: var(--background-light);
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    color: var(--foreground-dark);
-    background: var(--background-dark);
-  }
+  color: var(--foreground);
+  background: var(--background);
 }
 
 .text-balance {
