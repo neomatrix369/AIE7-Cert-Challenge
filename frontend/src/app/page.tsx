@@ -136,6 +136,38 @@ const PERSONAS: Persona[] = [
       { text: 'What are the consequences of defaulting on a federal student loan, and what steps can I take to rehabilitate or resolve a defaulted loan?', focus: 'Loan Default' },
       { text: 'I believe I qualify for a loan discharge due to school closure or misrepresentation. What is the process for applying for borrower defense to repayment?', focus: 'Loan Discharge' },
     ]
+  },
+  {
+    id: 'general-user',
+    name: 'General User',
+    emoji: '👤',
+    description: 'Seeking quick answers and general information',
+    color: 'bg-gray-100 border-gray-300 text-gray-800',
+    questions: [
+      { text: 'What types of federal student loans are available?', focus: 'Basic Info' },
+      { text: 'How do I apply for federal student aid?', focus: 'Application Process' },
+      { text: 'What is the difference between federal and private student loans?', focus: 'Loan Comparison' },
+      { text: 'Where can I find my loan servicer contact information?', focus: 'Servicer Info' },
+      { text: 'What should I do if I\'m having trouble with my loan servicer?', focus: 'Servicer Issues' },
+      { text: 'How can I check my federal student loan balance and payment history?', focus: 'Account Access' },
+      { text: 'What resources are available for understanding my repayment options?', focus: 'Resources' },
+    ]
+  },
+  {
+    id: 'disabled-student',
+    name: 'Disabled Student',
+    emoji: '♿',
+    description: 'Seeking accessible information and support options',
+    color: 'bg-rose-100 border-rose-300 text-rose-800',
+    questions: [
+      { text: 'What loan discharge options are available for students with disabilities?', focus: 'Disability Discharge' },
+      { text: 'How do I apply for Total and Permanent Disability discharge?', focus: 'TPD Discharge' },
+      { text: 'What documentation is needed to prove disability for loan discharge?', focus: 'Documentation' },
+      { text: 'Are there special repayment options for borrowers with disabilities?', focus: 'Repayment Options' },
+      { text: 'What accommodations are available for borrowers who need accessible communication formats?', focus: 'Accessibility' },
+      { text: 'How can I get help completing loan forms if I have a disability that affects my ability to process paperwork?', focus: 'Form Assistance' },
+      { text: 'What happens to my loans if my disability status changes after receiving a discharge?', focus: 'Status Changes' },
+    ]
   }
 ]
 
@@ -416,7 +448,17 @@ export default function ChatInterface() {
 
       <div className="flex-1 max-w-6xl mx-auto w-full p-4 overflow-y-auto">
         {showPersonaSelection ? (
-          <div className="py-4">
+          <div className="py-8">
+            {/* Welcome Section */}
+            <div className="text-center mb-8 max-w-4xl mx-auto">
+              <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                🎯 What's Your Student Loan Situation?
+              </h2>
+              <p className="text-lg text-gray-600 mb-6">
+                Choose your role below to get personalized assistance with your federal student loans
+              </p>
+              <div className="w-24 h-1 bg-blue-600 mx-auto rounded-full"></div>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
               {PERSONAS.map((persona) => (
