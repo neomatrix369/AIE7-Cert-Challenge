@@ -5,38 +5,34 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --background-light: #f8f9fa;
-  --foreground-light: #212529;
-  --primary-light: #007bff;
-  --primary-hover-light: #0056b3;
-  --user-message-bg-light: #007bff;
+  /* A more friendly, laid-back theme */
+  --background-light: #f4f7f9;
+  --foreground-light: #333333;
+  --primary-light: #5b86e5;
+  --primary-hover-light: #4a6fcf;
+  --user-message-bg-light: #5b86e5;
   --bot-message-bg-light: #ffffff;
-  --border-light: #dee2e6;
+  --border-light: #e0e0e0;
 
-  --background-dark: #121212;
-  --foreground-dark: #e0e0e0;
-  --primary-dark: #4dabf7;
-  --primary-hover-dark: #2196f3;
-  --user-message-bg-dark: #4dabf7;
-  --bot-message-bg-dark: #1e1e1e;
-  --border-dark: #333333;
+  --background-dark: #1a202c;
+  --foreground-dark: #e2e8f0;
+  --primary-dark: #63b3ed;
+  --primary-hover-dark: #4299e1;
+  --user-message-bg-dark: #63b3ed;
+  --bot-message-bg-dark: #2d3748;
+  --border-dark: #4a5568;
 }
 
 body {
   font-family: 'Inter', sans-serif;
-}
-
-@media (prefers-color-scheme: light) {
-  body {
-    background-color: var(--background-light);
-    color: var(--foreground-light);
-  }
+  color: var(--foreground-light);
+  background: var(--background-light);
 }
 
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: var(--background-dark);
     color: var(--foreground-dark);
+    background: var(--background-dark);
   }
 }
 

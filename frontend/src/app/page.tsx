@@ -1,7 +1,15 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Send, MessageSquare, Clock, CheckCircle, AlertCircle, Zap } from 'lucide-react'
+import { Send, MessageSquare, Clock, CheckCircle, AlertCircle, Zap, Info } from 'lucide-react'
+
+interface PerformanceMetrics {
+  response_time_ms?: number;
+  retrieval_time_ms?: number;
+  generation_time_ms?: number;
+  confidence_score?: number;
+  tokens_used?: number;
+}
 
 interface Message {
   id: string
@@ -10,6 +18,8 @@ interface Message {
   timestamp: Date
   sources?: number
   processingTime?: string
+  performance_metrics?: PerformanceMetrics
+  source_details?: any[]
 }
 
 interface ApiResponse {
@@ -17,9 +27,8 @@ interface ApiResponse {
   sources_count: number
   success: boolean
   message?: string
-  performance_metrics?: {
-    total_processing_time: number
-  }
+  performance_metrics?: PerformanceMetrics
+  source_details?: any[]
 }
 
 export default function ChatInterface() {
@@ -90,6 +99,7 @@ export default function ChatInterface() {
       }
 
       const data: ApiResponse = await response.json()
+      console.log('Backend Response:', data)
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -97,9 +107,11 @@ export default function ChatInterface() {
         isUser: false,
         timestamp: new Date(),
         sources: data.sources_count,
-        processingTime: data.performance_metrics?.total_processing_time 
-          ? `${data.performance_metrics.total_processing_time.toFixed(2)}s` 
-          : undefined
+        processingTime: data.performance_metrics?.response_time_ms
+          ? `${(data.performance_metrics.response_time_ms / 1000).toFixed(2)}s` 
+          : undefined,
+        performance_metrics: data.performance_metrics,
+        source_details: data.source_details
       }
 
       setMessages(prev => [...prev, botMessage])
@@ -151,7 +163,7 @@ export default function ChatInterface() {
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-3xl rounded-lg p-4 shadow-md ${message.isUser ? 'bg-[var(--user-message-bg-light)] dark:bg-[var(--user-message-bg-dark)] text-white' : 'bg-[var(--bot-message-bg-light)] dark:bg-[var(--bot-message-bg-dark)] text-[var(--foreground-light)] dark:text-[var(--foreground-dark)] border border-[var(--border-light)] dark:border-[var(--border-dark)]'}`}>
+                className={`relative max-w-3xl rounded-lg p-4 shadow-md ${message.isUser ? 'bg-[var(--user-message-bg-light)] dark:bg-[var(--user-message-bg-dark)] text-white' : 'bg-[var(--bot-message-bg-light)] dark:bg-[var(--bot-message-bg-dark)] text-[var(--foreground-light)] dark:text-[var(--foreground-dark)] border border-[var(--border-light)] dark:border-[var(--border-dark)]'}`}> 
                 <div className="whitespace-pre-wrap">{message.content}</div>
                 <div className="flex items-center justify-between mt-2 text-xs opacity-70">
                   <span>{message.timestamp.toLocaleTimeString()}</span>
@@ -171,6 +183,28 @@ export default function ChatInterface() {
                     </div>
                   )}
                 </div>
+                {!message.isUser && message.performance_metrics && (
+                  <div className="group absolute top-2 right-2">
+                    <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
+                    <div className="absolute right-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 text-xs text-gray-700 dark:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                      <h3 className="font-semibold mb-1">Performance & Source Details</h3>
+                      {message.performance_metrics.response_time_ms && <p>Response Time: {(message.performance_metrics.response_time_ms / 1000).toFixed(2)}s</p>}
+                      {message.performance_metrics.retrieval_time_ms && <p>Retrieval Time: {(message.performance_metrics.retrieval_time_ms / 1000).toFixed(2)}s</p>}
+                      {message.performance_metrics.generation_time_ms && <p>Generation Time: {(message.performance_metrics.generation_time_ms / 1000).toFixed(2)}s</p>}
+                      {message.performance_metrics.tokens_used && <p>Tokens Used: {message.performance_metrics.tokens_used}</p>}
+                      {message.source_details && message.source_details.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-300 dark:border-gray-600">
+                          <h4 className="font-semibold">Sources:</h4>
+                          <ul className="list-disc list-inside">
+                            {message.source_details.map((source, index) => (
+                              <li key={index} className="truncate">{typeof source === 'string' ? source : JSON.stringify(source)}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}
