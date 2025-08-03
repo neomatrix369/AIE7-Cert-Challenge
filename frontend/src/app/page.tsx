@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Send, MessageSquare, Clock, CheckCircle, AlertCircle, Zap, Info } from 'lucide-react'
+import { Send, MessageSquare, Clock, CheckCircle, AlertCircle, Info, GraduationCap } from 'lucide-react'
 
 interface PerformanceMetrics {
   response_time_ms?: number;
@@ -160,7 +160,7 @@ export default function ChatInterface() {
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       sendMessage()
@@ -172,11 +172,11 @@ export default function ChatInterface() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background-light)] dark:bg-[var(--background-dark)] flex flex-col">
-      <header className="bg-[var(--primary-light)] dark:bg-[var(--primary-dark)] text-white p-4 shadow-md">
+    <div className="min-h-screen bg-white flex flex-col">
+      <header className="bg-[var(--primary)] text-white p-4 shadow-md">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <MessageSquare className="h-8 w-8" />
+            <GraduationCap className="h-8 w-8" />
             <h1 className="text-xl font-semibold">Federal Student Loan Assistant</h1>
           </div>
           <div className="flex items-center space-x-2">
@@ -195,15 +195,41 @@ export default function ChatInterface() {
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`relative max-w-3xl rounded-lg p-4 shadow-md ${message.isUser ? 'bg-[var(--user-message-bg-light)] dark:bg-[var(--user-message-bg-dark)] text-white' : 'bg-[var(--bot-message-bg-light)] dark:bg-[var(--bot-message-bg-dark)] text-[var(--foreground-light)] dark:text-[var(--foreground-dark)] border border-[var(--border-light)] dark:border-[var(--border-dark)]'}`}>
+                className={`relative max-w-3xl rounded-lg p-4 shadow-md ${message.isUser ? 'bg-[var(--user-message-bg)] text-gray-800' : 'bg-[var(--bot-message-bg)] text-[var(--foreground)] border border-[var(--border)]'}`}>
                 <div className="whitespace-pre-wrap">{message.content}</div>
                 <div className="flex items-center justify-between mt-2 text-xs opacity-70">
                   <span>{message.timestamp.toLocaleTimeString()}</span>
                   {!message.isUser && (
                     <div className="flex items-center space-x-3">
                       {message.sources && (
-                        <span className="flex items-center space-x-1">
-                          <span>📚 {message.sources} sources</span>
+                        <span className="flex items-center space-x-1 group/sources relative">
+                          <span className="cursor-help">📚 {message.sources} sources</span>
+                          {message.source_details && message.source_details.length > 0 && (
+                            <div className="absolute left-0 bottom-full mb-2 w-80 bg-yellow-100 border border-yellow-300 rounded-lg shadow-lg p-2 text-xs text-gray-700 opacity-0 group-hover/sources:opacity-100 transition-opacity duration-300 z-10">
+                              <h4 className="font-semibold mb-1">Sources:</h4>
+                              <ul className="list-disc list-inside max-h-40 overflow-y-auto">
+                                {message.source_details.map((source, index) => {
+                                  const content = typeof source === 'object' && source.content ? source.content : (typeof source === 'string' ? source : JSON.stringify(source));
+                                  const truncatedContent = content.length > 80 ? content.substring(0, 80) + '...' : content;
+                                  return (
+                                    <li key={index} className="mb-1 text-xs">
+                                      {typeof source === 'object' && source.relevance_score !== undefined && source.relevance_score > 0 ? (
+                                        <span>
+                                          <span className="font-medium text-blue-600">
+                                            [{source.relevance_score.toFixed(3)}]
+                                          </span>
+                                          {' '}
+                                          <span>{truncatedContent}</span>
+                                        </span>
+                                      ) : (
+                                        <span>{truncatedContent}</span>
+                                      )}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          )}
                         </span>
                       )}
                       {message.processingTime && (
@@ -217,19 +243,39 @@ export default function ChatInterface() {
                 </div>
                 {!message.isUser && message.performance_metrics && (
                   <div className="group absolute top-2 right-2">
-                    <Info className="h-4 w-4 text-gray-400 cursor-pointer" />
-                    <div className="absolute right-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 text-xs text-gray-700 dark:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                    <div className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-full p-1 transition-colors duration-200 cursor-pointer">
+                      <Info className="h-3 w-3 text-white" />
+                    </div>
+                    <div className="absolute right-0 bottom-full mb-2 w-64 bg-yellow-100 border border-yellow-300 rounded-lg shadow-lg p-2 text-xs text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                       <h3 className="font-semibold mb-1">Performance & Source Details</h3>
                       {message.performance_metrics.response_time_ms && <p>Response Time: {(message.performance_metrics.response_time_ms / 1000).toFixed(2)}s</p>}
                       {message.performance_metrics.retrieval_time_ms && <p>Retrieval Time: {(message.performance_metrics.retrieval_time_ms / 1000).toFixed(2)}s</p>}
                       {message.performance_metrics.generation_time_ms && <p>Generation Time: {(message.performance_metrics.generation_time_ms / 1000).toFixed(2)}s</p>}
-                      {message.performance_metrics.tokens_used && <p>Tokens Used: {message.performance_metrics.tokens_used}</p>}
+                      {message.performance_metrics.input_tokens && message.performance_metrics.output_tokens ? (
+                        <p>Tokens: {message.performance_metrics.input_tokens} in / {message.performance_metrics.output_tokens} out</p>
+                      ) : message.performance_metrics.tokens_used && (
+                        <p>Tokens Used: {message.performance_metrics.tokens_used}</p>
+                      )}
                       {message.source_details && message.source_details.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-gray-300 dark:border-gray-600">
+                        <div className="mt-2 pt-2 border-t border-gray-300">
                           <h4 className="font-semibold">Sources:</h4>
                           <ul className="list-disc list-inside">
                             {message.source_details.map((source, index) => (
-                              <li key={index} className="truncate">{typeof source === 'string' ? source : JSON.stringify(source)}</li>
+                              <li key={index} className="truncate">
+                                {typeof source === 'object' && source.relevance_score !== undefined && source.relevance_score > 0 ? (
+                                  <span>
+                                    <span className="font-medium text-blue-600">
+                                      [{source.relevance_score.toFixed(3)}]
+                                    </span>
+                                    {' '}
+                                    {source.content}
+                                  </span>
+                                ) : (
+                                  <span>
+                                    {typeof source === 'object' && source.content ? source.content : (typeof source === 'string' ? source : JSON.stringify(source))}
+                                  </span>
+                                )}
+                              </li>
                             ))}
                           </ul>
                         </div>
@@ -244,22 +290,22 @@ export default function ChatInterface() {
         </div>
 
         {messages.length <= 1 && !isLoading && (
-          <div className="text-center text-gray-500 dark:text-gray-400">
+          <div className="text-center text-gray-500">
             <h2 className="text-lg font-semibold mb-2">Try asking a question!</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <button onClick={() => handleExampleQuestion('What is the difference between a subsidized and unsubsidized loan?')} className="bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-sm">What is the difference between a subsidized and unsubsidized loan?</button>
-              <button onClick={() => handleExampleQuestion('How do I apply for a Direct PLUS Loan?')} className="bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-sm">How do I apply for a Direct PLUS Loan?</button>
-              <button onClick={() => handleExampleQuestion('What are the current interest rates for federal student loans?')} className="bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-sm">What are the current interest rates for federal student loans?</button>
-              <button onClick={() => handleExampleQuestion('Can I consolidate my federal student loans?')} className="bg-gray-200 dark:bg-gray-700 p-2 rounded-lg text-sm">Can I consolidate my federal student loans?</button>
+              <button onClick={() => handleExampleQuestion('What is the difference between a subsidized and unsubsidized loan?')} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-sm text-gray-700">What is the difference between a subsidized and unsubsidized loan?</button>
+              <button onClick={() => handleExampleQuestion('How do I apply for a Direct PLUS Loan?')} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-sm text-gray-700">How do I apply for a Direct PLUS Loan?</button>
+              <button onClick={() => handleExampleQuestion('What are the current interest rates for federal student loans?')} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-sm text-gray-700">What are the current interest rates for federal student loans?</button>
+              <button onClick={() => handleExampleQuestion('Can I consolidate my federal student loans?')} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-lg text-sm text-gray-700">Can I consolidate my federal student loans?</button>
             </div>
           </div>
         )}
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-[var(--bot-message-bg-light)] dark:bg-[var(--bot-message-bg-dark)] text-[var(--foreground-light)] dark:text-[var(--foreground-dark)] shadow-md border border-[var(--border-light)] dark:border-[var(--border-dark)] rounded-lg p-4 max-w-3xl">
+            <div className="bg-[var(--bot-message-bg)] text-[var(--foreground)] shadow-md border border-[var(--border)] rounded-lg p-4 max-w-3xl">
               <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--primary-light)] dark:border-[var(--primary-dark)]"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--primary)]"></div>
                 <span>Searching through federal student loan knowledge base...</span>
               </div>
             </div>
@@ -267,27 +313,27 @@ export default function ChatInterface() {
         )}
       </div>
 
-      <div className="border-t border-[var(--border-light)] dark:border-[var(--border-dark)] bg-[var(--background-light)] dark:bg-[var(--background-dark)] p-4">
+      <div className="border-t border-[var(--border)] bg-white p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex space-x-4">
             <textarea
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="Ask me anything about federal student loans..."
-              className="flex-1 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[var(--primary-light)] dark:focus:ring-[var(--primary-dark)] focus:border-transparent resize-none bg-white dark:bg-gray-800 text-black dark:text-white"
+              className="flex-1 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none bg-white text-black"
               rows={2}
               disabled={isLoading}
             />
             <button
               onClick={sendMessage}
               disabled={!inputMessage.trim() || isLoading}
-              className="px-6 py-3 bg-[var(--primary-light)] dark:bg-[var(--primary-dark)] text-white rounded-lg hover:bg-[var(--primary-hover-light)] dark:hover:bg-[var(--primary-hover-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-light)] dark:focus:ring-[var(--primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
+              className="px-6 py-3 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
               <Send className="h-4 w-4" />
               <span>Send</span>
             </button>
           </div>
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <div className="mt-2 text-xs text-gray-500">
             Press Enter to send, Shift+Enter for new line
           </div>
         </div>
