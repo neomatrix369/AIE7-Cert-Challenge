@@ -380,7 +380,7 @@ export default function ChatInterface() {
         </div>
       </header>
 
-      <div className="flex-1 max-w-6xl mx-auto w-full p-4">
+      <div className="flex-1 max-w-6xl mx-auto w-full p-4 overflow-y-auto">
         {showPersonaSelection ? (
           <div className="py-4">
             
@@ -406,7 +406,7 @@ export default function ChatInterface() {
                   <div className="flex items-center space-x-3">
                     <span className="text-2xl">{selectedPersona.emoji}</span>
                     <div>
-                      <span className="font-medium text-blue-900">Welcome, {selectedPersona.name}!</span>
+                      <span className="font-medium text-blue-900">Welcome, <b>{selectedPersona.name}</b>!</span>
                       <p className="text-sm text-blue-700">I'm here to help with federal student loan questions tailored to your situation.</p>
                     </div>
                   </div>
@@ -416,6 +416,59 @@ export default function ChatInterface() {
                   >
                     Change Role
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* Question Sheet - positioned after welcome banner */}
+            {selectedPersona && (
+              <div className="mb-4 bg-yellow-50 border border-yellow-200 shadow-sm rounded-lg overflow-hidden">
+                <div className="flex items-center justify-between p-3 bg-yellow-100 border-b border-yellow-200">
+                  <h3 className="text-sm font-medium text-gray-700">
+                    {messages.length <= 1
+                      ? (
+                        <>
+                          {selectedPersona.emoji} Helper questions for{' '}
+                          <span className="font-bold text-gray-900">{selectedPersona.name}</span>
+                        </>
+                      ) : (
+                        <>
+                          {selectedPersona.emoji} More{' '}
+                          <span className="font-bold text-gray-900">{selectedPersona.name}</span>
+                          {' '}Questions
+                        </>
+                      )
+                    }
+                  </h3>
+                  <button
+                    onClick={() => setShowExampleQuestionsSlider(!showExampleQuestionsSlider)}
+                    className="p-1 hover:bg-yellow-200 rounded-full transition-colors duration-200"
+                    title={showExampleQuestionsSlider ? 'Collapse questions' : 'Expand questions'}
+                  >
+                    {showExampleQuestionsSlider ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </button>
+                </div>
+                <div
+                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                    showExampleQuestionsSlider ? 'max-h-[40vh] opacity-100' : 'max-h-0 opacity-0'
+                  }`}
+                >
+                  <div className="p-4 max-h-[40vh] overflow-y-auto">
+                    <ul className="space-y-2">
+                      {selectedPersona.questions.map((question, index) => (
+                        <li key={index}>
+                          <button
+                            onClick={() => handleExampleQuestion(question)}
+                            className="text-left w-full hover:bg-yellow-100 p-2 rounded transition-colors duration-200 text-sm"
+                          >
+                            <span className="text-blue-600">•</span>{' '}
+                            <span className="font-medium text-blue-700">{question.focus}:</span>{' '}
+                            <span className="text-gray-700">{question.text}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
             )}
@@ -545,37 +598,6 @@ export default function ChatInterface() {
           <div ref={messagesEndRef} />
         </div>
 
-        {messages.length <= 1 && !isLoading && selectedPersona && (
-          <div className="text-center text-gray-500 dark:text-gray-400">
-            <h2 className="text-lg font-semibold mb-2">Here are some questions relevant to {selectedPersona.name.toLowerCase()}s:</h2>
-            <div className="relative w-full">
-              <div 
-                className={`flex flex-col space-y-2 p-2 transition-all duration-300 ease-in-out ${showExampleQuestionsSlider ? 'max-h-[60vh] opacity-100 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'}`}
-                style={{ 
-                  scrollbarWidth: 'thin', 
-                  scrollbarColor: '#cbd5e1 transparent'
-                } as React.CSSProperties}
-              >
-                {selectedPersona.questions.map((question, index) => (
-                  <button 
-                    key={index}
-                    onClick={() => handleExampleQuestion(question)} 
-                    className="flex-none bg-[var(--bot-message-bg)] hover:bg-gray-100 p-3 rounded-lg text-sm text-[var(--foreground)] text-left border border-[var(--border)] shadow-sm"
-                  >
-                    <span className="font-semibold">Focus: {question.focus}</span><br/>{question.text}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={() => setShowExampleQuestionsSlider(!showExampleQuestionsSlider)}
-                className="absolute top-0 right-0 p-1 bg-gray-200 dark:bg-gray-700 rounded-full shadow-md hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300"
-                title={showExampleQuestionsSlider ? 'Collapse suggestions' : 'Expand suggestions'}
-              >
-                {showExampleQuestionsSlider ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-              </button>
-            </div>
-          </div>
-        )}
 
         {isLoading && (
           <div className="flex justify-start">
