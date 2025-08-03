@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Send, Clock, CheckCircle, AlertCircle, Info, GraduationCap, ChevronDown, ChevronUp } from 'lucide-react'
+import { Send, Clock, CheckCircle, AlertCircle, Info, GraduationCap, ChevronDown, ChevronUp, X } from 'lucide-react'
 
 interface PerformanceMetrics {
   response_time_ms?: number;
@@ -350,6 +350,11 @@ export default function ChatInterface() {
     }
   }
 
+  const clearInput = () => {
+    setInputMessage('')
+    setSelectedQuestionFocus(null)
+  }
+
   const handleExampleQuestion = (question: Question) => {
     // Populate input field with focus and question for user review
     const formattedInput = `Focus: ${question.focus}\n${question.text}`;
@@ -598,6 +603,15 @@ export default function ChatInterface() {
               rows={2}
               disabled={isLoading}
             />
+            <button
+              onClick={clearInput}
+              disabled={!inputMessage.trim() || isLoading}
+              className="px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              title="Clear input"
+              aria-label="Clear input field"
+            >
+              <X className="h-4 w-4" />
+            </button>
             <button
               onClick={sendMessage}
               disabled={!inputMessage.trim() || isLoading}
