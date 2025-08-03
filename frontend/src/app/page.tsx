@@ -191,6 +191,7 @@ export default function ChatInterface() {
   // Chat session persistence - store messages for each persona
   const [chatSessions, setChatSessions] = useState<{ [personaId: string]: Message[] }>({})
   
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -664,40 +665,50 @@ export default function ChatInterface() {
         )}
       </div>
 
-      <div className="border-t border-[var(--border)] bg-[var(--background)] p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex space-x-4">
-            <textarea
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask me anything about federal student loans..."
-              className="flex-1 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none bg-white text-black"
-              rows={2}
-              disabled={isLoading}
-            />
-            <button
-              onClick={clearInput}
-              disabled={!inputMessage.trim() || isLoading}
-              className="px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              title="Clear input"
-              aria-label="Clear input field"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <button
-              onClick={sendMessage}
-              disabled={!inputMessage.trim() || isLoading}
-              className="px-6 py-3 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
-              <Send className="h-4 w-4" />
-              <span>Send</span>
-            </button>
-          </div>
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            Press Enter to send, Shift+Enter for new line
-          </div>
+      {/* Fixed Footer AI Disclaimer */}
+      <div className="fixed bottom-0 left-0 right-0 bg-amber-50 border-t border-amber-200 px-4 py-2 text-center z-50">
+        <div className="text-xs text-amber-800 font-semibold">
+          🤖 AI-powered tool: For educational purposes only. Always verify with official sources.
         </div>
       </div>
+
+      {/* Chat Input Area - Only visible when persona is selected */}
+      {selectedPersona && (
+        <div className="border-t border-[var(--border)] bg-[var(--background)] p-4 pb-12">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex space-x-4">
+              <textarea
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask me anything about federal student loans..."
+                className="flex-1 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none bg-white text-black"
+                rows={2}
+                disabled={isLoading}
+              />
+              <button
+                onClick={clearInput}
+                disabled={!inputMessage.trim() || isLoading}
+                className="px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                title="Clear input"
+                aria-label="Clear input field"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <button
+                onClick={sendMessage}
+                disabled={!inputMessage.trim() || isLoading}
+                className="px-6 py-3 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
+                <Send className="h-4 w-4" />
+                <span>Send</span>
+              </button>
+            </div>
+            <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              Press Enter to send, Shift+Enter for new line
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
