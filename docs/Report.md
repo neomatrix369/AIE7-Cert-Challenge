@@ -25,31 +25,71 @@
 
 Technology Stack Choices
 
-- LLM: GPT-4 (any one from the family) - Excellent at understanding complex policy language and generating customer-appropriate explanations while maintaining accuracy with citations. As Chris said they need to do a bit of thinky-thinky, hence ones that can reason well
-- Embedding Model: OpenAI `text-embedding-3-large` - the usual choice of a model with strong performance on documents and text
-- Orchestration: LangGraph - Enables complex multi-agent workflows for borrower classification, policy retrieval, and response validation with clear decision paths
-- Vector Database: Qdrant - as we have been using during our sessions and satisfies the basic requirements of storing and searching documents
-- Monitoring: LangSmith - Built-in tracing for agent workflows, essential for debugging tool calls and measuring response quality in customer service context
-- User Interface: Streamlit or Cursor generate front-end - Rapid prototyping for agent-facing dashboard with real-time chat
-- Evaluation: RAGAS - Industry standard for RAG evaluation with metrics that align with accuracy and relevance requirements for policy-based responses
-- Serving & Inference: FastAPI + Docker - Production-ready deployment with session management between user sessions
+- LLM: GPT-4 (gpt-4.1, gpt-4o-mini, gpt-4o-nano) - Excellent at understanding complex policy language and generating, and each of them have their expertise as per their individual strenghs. And all of them can perform customer-appropriate explanations while maintaining accuracy with citations. As Chris said they need to do a bit of thinky-thinky, hence ones that can reason well are include. For e.g. their strengths go from strong to week for these models respectively: pt-4.1, gpt-4o-mini, gpt-4o-nano
+- Embedding Model: OpenAI `text-embedding-3-small` and `text-embedding-3-large` - the usual choice of a embeddings model with strong performance on documents and text
+- Orchestration: LangGraph - Enables complex multi-agent workflows for our agentic RAG to run our tools, eventhough we have used only simple graphs
+- Vector Database: Qdrant - as we have been using during our sessions and satisfies the basic requirements of storing chunks and searching documents, also code to use it integrated with the retrievers were already avail to use
+- Monitoring: LangSmith - Built-in tracing for agent workflows, essential for debugging tool calls and measuring response quality in customer service context, in case we learn monitoring using LangSmith
+- User Interface: Streamlit or Cursor/Claude Code generate front-end + Docker - rapid prototyping for agent-facing dashboard with real-time chat
+- Evaluation: RAGAS - Industry standard for RAG evaluation with metrics that align with accuracy and relevance requirements for Student Loan responses
+- Serving & Inference: FastAPI + Docker - Production-ready deployment with session management between user sessions, fully satisfies our requirements allowing us a quick go-to-market
 
 - _Simplified Agentic Reasoning Strategy: Smart Customer Service Assistant_
 Primary Agent: Federal Student Loan Assistant
 - Core Function: Intelligent question processing with context-aware tool selection and response generation
-- Tool Arsenal: Policy document retrieval, external search engine service(s)
+- Tool Arsenal: Policy and Complaints document retrieval, external search engine service(s) (loan specific sites and also general search engine searches)
 
-Agentic Reasoning Within Single Agent:
-- Question Classification & Tool Selection: Determines question type (repayment, eligibility, procedures, others) and selects appropriate tools 
-- Routes to policy documents vs. external search based on question complexity
+Agentic Reasoning Within Single Agent: Smart Tool Orchestration & Contextual Routing
+
+  The agent intelligently analyzes each user query to determine its type and complexity. It then orchestrates a mix of
+  internal and external tools:
+
+   * Internal RAG Tools: Prioritized for questions answerable by the project's hybrid knowledge base (federal policies,
+      customer complaints). This includes specialized RAG method like Parent-Document (only using one method as per RAGAS Evaluation outcome)
+   * External Search Tools: Utilized for information beyond the internal dataset, such as official federal guidance
+     (StudentAid.gov), servicer-specific details (Mohela), comprehensive loan comparison service (StudentAid & Mohela combined), or broader web searches (using Tavily).
+
+  This dynamic routing ensures the most relevant and authoritative information source is consulted, adapting to the query's specific needs.
 
 Why Single Agent Works?:
-- Sufficient Complexity: The agentic behavior comes from intelligent tool orchestration and multi-step reasoning within one agent, not from multiple specialized agents
+- Sufficient Complexity: The agentic behavior comes from intelligent tool orchestration and orchestrating multiple tools, not from multiple specialized agents
 - Clear Workflow: _Question_ → _Analyze_ → _Retrieve_ → _Synthesize_ → _Respond_ (with escalation branching) - linear enough for one agent to handle effectively
 
 ## Task 3: Dealing with the Data
 
-Is the complains dataset at https://github.com/neomatrix369/AIE7/blob/s09-assignment/09_Advanced_Retrieval/data/complaints.csv sufficient?
+_Data Sources_
+
+All the files in the `data` folder are our dataset, shared during the covert:
+- four PDF files 
+  - Academic_Calenders_Cost_of_Attendance_and_Packaging.pdf
+  - Applications_and_Verification_Guide.pdf
+  - The_Direct_Loan_Program.pdf
+  - The_Federal_Pell_Grant_Program.pdf
+- one complains.csv file (14K records)
+
+_Chunking strategy_
+
+The simplest chunking strategy has been used:
+```python
+### taking advise from and also reviewing all the code and notebooks shared on RAG and works (legacy implementation)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
+```
+One of the analysis from an LLM suggested for the type of data/documents present in the `data` folder the below is the most optimised one to have:
+```python
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+```
+
+While for Parent Docoment retrievers can be setup this way:
+```python
+# chunk_size: Large enough to provide robust context to the LLM, often capturing a complete, self-contained section of the handbook.
+# chunk_overlap: Overlap is less critical for parent chunks as they are not directly used for similarity search.
+parent_text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500 chunk_overlap=0)
+
+# chunk_size: Optimized for precise, accurate retrieval of specific facts and regulations.
+# chunk_overlap: Maintains continuity between small chunks without excessive redundancy.
+child_text_splitter = RecursiveCharacterTextSplitter(chunk_size=512 chunk_overlap=50)
+```
+We can try the above and (re)run experiments using our RAGAS evaluation pipeline to see if we get better scores.
 
 **✅ Deliverables**
 1. Describe all of your data sources and external APIs, and describe what you’ll use them for.
