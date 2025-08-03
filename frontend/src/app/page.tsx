@@ -310,13 +310,15 @@ export default function ChatInterface() {
   }
 
   const handleExampleQuestion = (question: Question) => {
-    setInputMessage(question.text)
-    setSelectedQuestionFocus(question.focus)
-    setShowExampleQuestionsSlider(false) // Collapse slider on question selection
-  }
+    // Populate input field with focus and question for user review
+    const formattedInput = `Focus: ${question.focus}\n${question.text}`;
+    setInputMessage(formattedInput);
+    setSelectedQuestionFocus(question.focus);
+    setShowExampleQuestionsSlider(false); // Collapse slider on question selection
+  };
 
   return (
-    <div className="min-h-screen bg-[var(--background-light)] dark:bg-[var(--background-dark)] flex flex-col">
+    <div className="min-h-screen bg-[var(--background)] flex flex-col">
       <header className="bg-blue-600 text-white p-4 shadow-md w-full">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -378,11 +380,8 @@ export default function ChatInterface() {
               key={message.id}
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`relative max-w-3xl rounded-lg p-4 shadow-md ${message.isUser ? 'bg-[var(--user-message-bg-light)] dark:bg-[var(--user-message-bg-dark)] text-white' : 'bg-[var(--bot-message-bg-light)] dark:bg-[var(--bot-message-bg-dark)] text-[var(--foreground-light)] dark:text-[var(--foreground-dark)] border border-[var(--border-light)] dark:border-[var(--border-dark)]'}`}>
+                className={`relative max-w-3xl rounded-lg p-4 shadow-md ${message.isUser ? 'bg-[var(--user-message-bg)] text-[var(--foreground)]' : 'bg-[var(--bot-message-bg)] text-[var(--foreground)] border border-[var(--border)]'}`}>
                 <div className="whitespace-pre-wrap">{message.content}</div>
-                {message.isUser && message.focus && (
-                  <div className="mt-1 text-xs text-gray-400">Focus: {message.focus}</div>
-                )}
                 <div className="flex items-center justify-between mt-2 text-xs opacity-70">
                   <span>{message.timestamp.toLocaleTimeString()}</span>
                   {!message.isUser && (
@@ -429,7 +428,7 @@ export default function ChatInterface() {
                 </div>
                 {!message.isUser && message.performance_metrics && (
                   <div className="group absolute top-2 right-2">
-                    <div className="bg-[var(--primary-light)] hover:bg-[var(--primary-hover-light)] rounded-full p-1 transition-colors duration-200 cursor-pointer">
+                    <div className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-full p-1 transition-colors duration-200 cursor-pointer">
                       <Info className="h-3 w-3 text-white" />
                     </div>
                     <div className="absolute right-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 text-xs text-gray-700 dark:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
@@ -476,15 +475,17 @@ export default function ChatInterface() {
             <h2 className="text-lg font-semibold mb-2">Here are some questions relevant to {selectedPersona.name.toLowerCase()}s:</h2>
             <div className="relative w-full">
               <div 
-                className={`flex overflow-x-auto space-x-2 p-2 transition-all duration-300 ease-in-out ${showExampleQuestionsSlider ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} // Hide scrollbar for Firefox and IE
+                className={`flex flex-col space-y-2 p-2 transition-all duration-300 ease-in-out ${showExampleQuestionsSlider ? 'max-h-[60vh] opacity-100 overflow-y-auto' : 'max-h-0 opacity-0 overflow-hidden'}`}
+                style={{ 
+                  scrollbarWidth: 'thin', 
+                  scrollbarColor: '#cbd5e1 transparent'
+                } as React.CSSProperties}
               >
                 {selectedPersona.questions.map((question, index) => (
                   <button 
                     key={index}
                     onClick={() => handleExampleQuestion(question)} 
-                    className="flex-none bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-3 rounded-lg text-sm text-gray-700 dark:text-gray-300 text-left border border-gray-200 dark:border-gray-600 shadow-sm"
-                    style={{ minWidth: '200px' }}
+                    className="flex-none bg-[var(--bot-message-bg-light)] dark:bg-[var(--bot-message-bg-dark)] hover:bg-[var(--border-light)] dark:hover:bg-[var(--border-dark)] p-3 rounded-lg text-sm text-[var(--foreground-light)] dark:text-[var(--foreground-dark)] text-left border border-[var(--border-light)] dark:border-[var(--border-dark)] shadow-sm"
                   >
                     <span className="font-semibold">Focus: {question.focus}</span><br/>{question.text}
                   </button>
