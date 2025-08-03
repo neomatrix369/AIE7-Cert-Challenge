@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Send, MessageSquare, Clock, CheckCircle, AlertCircle, Info, GraduationCap, ChevronDown, ChevronUp } from 'lucide-react'
+import { Send, Clock, CheckCircle, AlertCircle, Info, GraduationCap, ChevronDown, ChevronUp } from 'lucide-react'
 
 interface PerformanceMetrics {
   response_time_ms?: number;
@@ -127,11 +127,11 @@ const PERSONAS: Persona[] = [
     description: 'Experiencing financial hardship with loan payments',
     color: 'bg-red-100 border-red-300 text-red-800',
     questions: [
-      { text: 'I can\'t make my loan payments, what are my options?', focus: 'General' },
+      { text: "I can't make my loan payments, what are my options?", focus: 'General' },
       { text: 'How do I apply for deferment or forbearance?', focus: 'General' },
       { text: 'What happens if I default on my federal student loans?', focus: 'General' },
       { text: 'How can I rehabilitate defaulted loans?', focus: 'General' },
-      { text: 'I\'m struggling to make my student loan payments. What are my options for temporary relief, such as forbearance or deferment?', focus: 'Financial Hardship' },
+      { text: "I'm struggling to make my student loan payments. What are my options for temporary relief, such as forbearance or deferment?", focus: 'Financial Hardship' },
       { text: 'What are the consequences of defaulting on a federal student loan, and what steps can I take to rehabilitate or resolve a defaulted loan?', focus: 'Loan Default' },
       { text: 'I believe I qualify for a loan discharge due to school closure or misrepresentation. What is the process for applying for borrower defense to repayment?', focus: 'Loan Discharge' },
     ]
@@ -361,7 +361,7 @@ export default function ChatInterface() {
                     <span className="text-2xl">{selectedPersona.emoji}</span>
                     <div>
                       <span className="font-medium text-blue-900">Welcome, {selectedPersona.name}!</span>
-                      <p className="text-sm text-blue-700">I\'m here to help with federal student loan questions tailored to your situation.</p>
+                      <p className="text-sm text-blue-700">I'm here to help with federal student loan questions tailored to your situation.</p>
                     </div>
                   </div>
                   <button
@@ -485,7 +485,7 @@ export default function ChatInterface() {
                   <button 
                     key={index}
                     onClick={() => handleExampleQuestion(question)} 
-                    className="flex-none bg-[var(--bot-message-bg-light)] dark:bg-[var(--bot-message-bg-dark)] hover:bg-[var(--border-light)] dark:hover:bg-[var(--border-dark)] p-3 rounded-lg text-sm text-[var(--foreground-light)] dark:text-[var(--foreground-dark)] text-left border border-[var(--border-light)] dark:border-[var(--border-dark)] shadow-sm"
+                    className="flex-none bg-[var(--bot-message-bg)] hover:bg-gray-100 p-3 rounded-lg text-sm text-[var(--foreground)] text-left border border-[var(--border)] shadow-sm"
                   >
                     <span className="font-semibold">Focus: {question.focus}</span><br/>{question.text}
                   </button>
@@ -504,9 +504,9 @@ export default function ChatInterface() {
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-[var(--bot-message-bg-light)] dark:bg-[var(--bot-message-bg-dark)] text-[var(--foreground-light)] dark:text-[var(--foreground-dark)] shadow-md border border-[var(--border-light)] dark:border-[var(--border-dark)] rounded-lg p-4 max-w-3xl">
+            <div className="bg-[var(--bot-message-bg)] text-[var(--foreground)] shadow-md border border-[var(--border)] rounded-lg p-4 max-w-3xl">
               <div className="flex items-center space-x-2">
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--primary-light)] dark:border-[var(--primary-dark)]"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--primary)]"></div>
                 <span>Searching through federal student loan knowledge base...</span>
               </div>
             </div>
@@ -516,7 +516,7 @@ export default function ChatInterface() {
         )}
       </div>
 
-      <div className="border-t border-[var(--border-light)] dark:border-[var(--border-dark)] bg-[var(--background-light)] dark:bg-[var(--background-dark)] p-4">
+      <div className="border-t border-[var(--border)] bg-[var(--background)] p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex space-x-4">
             <textarea
@@ -524,14 +524,14 @@ export default function ChatInterface() {
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask me anything about federal student loans..."
-              className="flex-1 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[var(--primary-light)] dark:focus:ring-[var(--primary-dark)] focus:border-transparent resize-none bg-white dark:bg-gray-800 text-black dark:text-white"
+              className="flex-1 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:border-transparent resize-none bg-white text-black"
               rows={2}
               disabled={isLoading}
             />
             <button
               onClick={sendMessage}
               disabled={!inputMessage.trim() || isLoading}
-              className="px-6 py-3 bg-[var(--primary-light)] dark:bg-[var(--primary-dark)] text-white rounded-lg hover:bg-[var(--primary-hover-light)] dark:hover:bg-[var(--primary-hover-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--primary-light)] dark:focus:ring-[var(--primary-dark)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
+              className="px-6 py-3 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2">
               <Send className="h-4 w-4" />
               <span>Send</span>
             </button>
