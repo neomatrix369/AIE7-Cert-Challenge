@@ -422,8 +422,8 @@ export default function ChatInterface() {
   }
 
   const handleExampleQuestion = (question: Question) => {
-    // Populate input field with focus and question for user review
-    const formattedInput = `Focus: ${question.focus}\n${question.text}`;
+    // Populate input field with role, focus and question for user review
+    const formattedInput = `Role: ${selectedPersona?.name}\nFocus: ${question.focus}\n${question.text}`;
     setInputMessage(formattedInput);
     setSelectedQuestionFocus(question.focus);
     setShowExampleQuestionsSlider(false); // Collapse slider on question selection
