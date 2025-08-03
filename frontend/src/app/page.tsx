@@ -223,8 +223,47 @@ export default function ChatInterface() {
   // Chat session persistence - store messages for each persona
   const [chatSessions, setChatSessions] = useState<{ [personaId: string]: Message[] }>({})
   
+  // Tooltip visibility state
+  const [openTooltips, setOpenTooltips] = useState<{ [messageId: string]: { 
+    info?: boolean, 
+    sources?: boolean,
+    infoPosition?: 'above' | 'below',
+    sourcesPosition?: 'above' | 'below'
+  } }>({})
+  
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const toggleTooltip = (messageId: string, type: 'info' | 'sources', event?: React.MouseEvent) => {
+    if (event && !openTooltips[messageId]?.[type]) {
+      // When opening tooltip, check if we need smart positioning
+      const rect = event.currentTarget.getBoundingClientRect()
+      const viewportHeight = window.innerHeight
+      const spaceAbove = rect.top
+      const spaceBelow = viewportHeight - rect.bottom
+      
+      // If not enough space above and more space below, show below
+      const shouldShowBelow = spaceAbove < 200 && spaceBelow > spaceAbove
+      
+      setOpenTooltips(prev => ({
+        ...prev,
+        [messageId]: {
+          ...prev[messageId],
+          [type]: true,
+          [`${type}Position`]: shouldShowBelow ? 'below' : 'above'
+        }
+      }))
+    } else {
+      // Toggle or close
+      setOpenTooltips(prev => ({
+        ...prev,
+        [messageId]: {
+          ...prev[messageId],
+          [type]: !prev[messageId]?.[type]
+        }
+      }))
+    }
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -497,10 +536,12 @@ export default function ChatInterface() {
                         <b>{selectedPersona.name}</b>!
                       </span>
                       <p className="text-sm text-blue-700">
-                        {messages.length > 0 
-                          ? `Continuing your conversation (${messages.length} message${messages.length !== 1 ? 's' : ''})`
-                          : `I'm here to help with federal student loan questions tailored to your situation.`
-                        }
+                        I'm here to help with federal student loan questions tailored to your situation.
+                        {messages.length > 0 && (
+                          <span className="ml-1">
+                            Continuing your conversation ({messages.length} message{messages.length !== 1 ? 's' : ''}).
+                          </span>
+                        )}
                       </p>
                     </div>
                   </div>
@@ -580,10 +621,19 @@ export default function ChatInterface() {
                   {!message.isUser && (
                     <div className="flex items-center space-x-3">
                       {message.sources && (
-                        <span className="flex items-center space-x-1 group/sources relative">
-                          <span className="cursor-help">📚 {message.sources} sources</span>
-                          {message.source_details && message.source_details.length > 0 && (
-                            <div className="absolute right-0 bottom-full mb-2 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-2 text-xs text-gray-700 dark:text-gray-300 opacity-0 group-hover/sources:opacity-100 transition-opacity duration-300 z-10">
+                        <span className="flex items-center space-x-1 relative">
+                          <button 
+                            onClick={(e) => toggleTooltip(message.id, 'sources', e)}
+                            className="cursor-pointer hover:text-blue-600 transition-colors duration-200"
+                          >
+                            📚 {message.sources} sources
+                          </button>
+                          {message.source_details && message.source_details.length > 0 && openTooltips[message.id]?.sources && (
+                            <div className={`absolute left-0 w-64 bg-white border-2 border-blue-300 rounded-lg shadow-xl p-2 text-xs text-blue-900 z-[70] max-h-40 overflow-y-auto ${
+                              openTooltips[message.id]?.sourcesPosition === 'below' 
+                                ? 'top-full mt-2' 
+                                : 'bottom-full mb-2'
+                            }`}>
                               <h4 className="font-semibold mb-1">Sources:</h4>
                               <ul className="list-disc list-inside max-h-40 overflow-y-auto">
                                 {message.source_details.map((source, index) => {
@@ -620,16 +670,24 @@ export default function ChatInterface() {
                   )}
                 </div>
                 {!message.isUser && message.performance_metrics && (
-                  <div className="group absolute top-2 right-2">
-                    <div className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-full p-1 transition-colors duration-200 cursor-pointer">
+                  <div className="absolute top-2 right-2">
+                    <button 
+                      onClick={(e) => toggleTooltip(message.id, 'info', e)}
+                      className="bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-full p-1 transition-colors duration-200 cursor-pointer"
+                    >
                       <Info className="h-3 w-3 text-white" />
-                    </div>
-                    <div className="absolute right-0 bottom-full mb-2 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3 text-xs text-gray-700 dark:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                    </button>
+                    {openTooltips[message.id]?.info && (
+                      <div className={`absolute right-0 w-72 bg-white border-2 border-blue-300 rounded-lg shadow-xl p-3 text-xs text-blue-900 z-[60] max-h-96 overflow-y-auto transform -translate-x-1/4 ${
+                        openTooltips[message.id]?.infoPosition === 'below' 
+                          ? 'top-full mt-2' 
+                          : 'bottom-full mb-2'
+                      }`}>
                       <h3 className="font-semibold mb-2">Performance & Processing Details</h3>
 
                       {/* Performance Metrics */}
                       <div className="mb-2">
-                        <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">⏱️ Performance</h4>
+                        <h4 className="font-medium text-blue-900 mb-1">⏱️ Performance</h4>
                         {message.performance_metrics.response_time_ms && <p>Response Time: {(message.performance_metrics.response_time_ms / 1000).toFixed(2)}s</p>}
                         {message.performance_metrics.retrieval_time_ms && <p>Retrieval Time: {(message.performance_metrics.retrieval_time_ms / 1000).toFixed(2)}s</p>}
                         {message.performance_metrics.generation_time_ms && <p>Generation Time: {(message.performance_metrics.generation_time_ms / 1000).toFixed(2)}s</p>}
@@ -638,10 +696,10 @@ export default function ChatInterface() {
                       {/* Token Usage */}
                       {(message.performance_metrics.input_tokens || message.performance_metrics.output_tokens || message.performance_metrics.tokens_used) && (
                         <div className="mb-2">
-                          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">🔢 Tokens</h4>
+                          <h4 className="font-medium text-blue-900 mb-1">🔢 Tokens</h4>
                           <p>
                             {message.performance_metrics.input_tokens && message.performance_metrics.output_tokens ? (
-                              <>📥 {message.performance_metrics.input_tokens} | 📤 {message.performance_metrics.output_tokens} | 💯 {message.performance_metrics.tokens_used || (message.performance_metrics.input_tokens + message.performance_metrics.output_tokens)}</>
+                              <>{message.performance_metrics.input_tokens} In | {message.performance_metrics.output_tokens} Out | 💯 {message.performance_metrics.tokens_used || (message.performance_metrics.input_tokens + message.performance_metrics.output_tokens)}</>
                             ) : message.performance_metrics.tokens_used ? (
                               <>💯 {message.performance_metrics.tokens_used} <span className="text-yellow-600 dark:text-yellow-400">(breakdown unavailable)</span></>
                             ) : null}
@@ -652,7 +710,7 @@ export default function ChatInterface() {
                       {/* Tools Used */}
                       {message.tools_used && message.tools_used.length > 0 && (
                         <div className="mb-2">
-                          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">🛠️ Tools Used</h4>
+                          <h4 className="font-medium text-blue-900 mb-1">🛠️ Tools Used</h4>
                           {message.tools_used.map((tool, index) => (
                             <p key={index}>{getHumanReadableToolName(tool)}</p>
                           ))}
@@ -660,8 +718,8 @@ export default function ChatInterface() {
                       )}
                       {/* Sources */}
                       {message.source_details && message.source_details.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-gray-300 dark:border-gray-600">
-                          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-1">📚 Sources</h4>
+                        <div className="mt-2 pt-2 border-t border-blue-300">
+                          <h4 className="font-medium text-blue-900 mb-1">📚 Sources</h4>
                           <ul className="list-disc list-inside max-h-32 overflow-y-auto">
                             {message.source_details.map((source, index) => (
                               <li key={index} className="truncate">
@@ -683,7 +741,8 @@ export default function ChatInterface() {
                           </ul>
                         </div>
                       )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
