@@ -20,5 +20,8 @@
 8am to 0930am (1.50 hrs): tidying and tweaking both frontend and backend
 8pm to 1045pm (2.75 hrs): tidying and tweaking both frontend and backend
 
+4th August 2025
+---------------
+7pm to 00:00am (5 hrs): report writing, updating docs, re-run of evaluations, final touches, loom video
 
-Total hours spent: 22.5 hours
+Total hours spent: 27.5 hours
