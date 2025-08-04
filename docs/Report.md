@@ -1,6 +1,11 @@
 ## Task 1: Defining the Problem and Audience
+**✅ Deliverables**
+
+1. Write a succinct 1-sentence description of the problem
 
 * **Problem:** It is hard to get clear, precise answers to questions about student loans and student loan repayment for existing borrowers and potential borrowers, even as a customer service agent within a federal student loan company like [Mohela](https://www.mohela.com/) and [Federal Student Aid](https://studentaid.gov/)
+
+2. Write 1-2 paragraphs on why this is a problem for your specific user
 
 * **Why:**  
   1. As student loan repayment continues this summer, the volume of calls is expected to increase in 2025
@@ -11,6 +16,10 @@
 * **Audience:** We are building this application for customer service agents who work in Federal Student Loan companies
 
 ## Task 2: Proposed Solution
+**✅ Deliverables**
+
+1. Write 1-2 paragraphs on your proposed solution.  How will it look and feel to the user?
+
 * **Solution**: We are building a solution that can answer questions like:
 
 | Category | Scenario / Question |
@@ -23,6 +32,16 @@
 | **New borrowers** | What grants and scholarships are available for free? |
 
 
+2. Describe the tools you plan to use in each part of your stack.  Write one sentence on why you made each tooling choice.
+    1. LLM
+    2. Embedding Model
+    3. Orchestration
+    4. Vector Database
+    5. Monitoring
+    6. Evaluation
+    7. User Interface
+    8. (Optional) Serving & Inference
+
 Technology Stack Choices
 
 - LLM: GPT-4 (gpt-4.1, gpt-4o-mini, gpt-4o-nano) - Excellent at understanding complex policy language and generating, and each of them have their expertise as per their individual strenghs. And all of them can perform customer-appropriate explanations while maintaining accuracy with citations. As Chris said they need to do a bit of thinky-thinky, hence ones that can reason well are include. For e.g. their strengths go from strong to week for these models respectively: pt-4.1, gpt-4o-mini, gpt-4o-nano
@@ -33,6 +52,8 @@ Technology Stack Choices
 - User Interface: Streamlit or Cursor/Claude Code generate front-end + Docker - rapid prototyping for agent-facing dashboard with real-time chat
 - Evaluation: RAGAS - Industry standard for RAG evaluation with metrics that align with accuracy and relevance requirements for Student Loan responses
 - Serving & Inference: FastAPI + Docker - Production-ready deployment with session management between user sessions, fully satisfies our requirements allowing us a quick go-to-market
+
+3. Where will you use an agent or agents?  What will you use “agentic reasoning” for in your app?
 
 - _Simplified Agentic Reasoning Strategy: Smart Customer Service Assistant_
 Primary Agent: Federal Student Loan Assistant
@@ -57,6 +78,10 @@ Why Single Agent Works?:
 
 ## Task 3: Dealing with the Data
 
+**✅ Deliverables**
+
+1. Describe all of your data sources and external APIs, and describe what you’ll use them for.
+
 _Data Sources_
 
 All the files in the `data` folder are our dataset, shared during the covert:
@@ -66,6 +91,8 @@ All the files in the `data` folder are our dataset, shared during the covert:
   - The_Direct_Loan_Program.pdf
   - The_Federal_Pell_Grant_Program.pdf
 - one complains.csv file (14K records)
+
+2. Describe the default chunking strategy that you will use.  Why did you make this decision?
 
 _Chunking strategy_
 
@@ -88,16 +115,17 @@ parent_text_splitter = RecursiveCharacterTextSplitter(chunk_size=750 chunk_overl
 child_text_splitter = RecursiveCharacterTextSplitter(chunk_size=750 chunk_overlap=100)
 ```
 
-**✅ Deliverables**
-1. Describe all of your data sources and external APIs, and describe what you’ll use them for.
-
-2. Describe the default chunking strategy that you will use.  Why did you make this decision?
-
 ## Task 4: Building a Quick End-to-End Agentic RAG Prototype
 
 **✅ Deliverables**
 - Build an end-to-end prototype and deploy it to a local endpoint
-_Underway_
+See [AIE7-Cert-Challenge](https://github.com/neomatrix369/AIE7-Cert-Challenge) | [README](https://github.com/neomatrix369/AIE7-Cert-Challenge/blob/main/README.md) | [Frontend README](https://github.com/neomatrix369/AIE7-Cert-Challenge/blob/main/frontend/README.md) | [Backend README](https://github.com/neomatrix369/AIE7-Cert-Challenge/blob/main/src/backend/README.md)
+
+---
+![front-page-screenshot](../screenshots/front-page-screenshot.png)
+---
+
+**Other screenshots:** [Swagger UI](../screenshots/swagger-ui-screenshot.png) | [Frontend blocking terminal/console](../screenshots/terminal-screen-frontend-app.jpg) | [Backend blocking terminal/console](../screenshots/terminal-screen-backend-app.jpg)
 
 ## Task 5: Creating a Golden Test Data Set
 
@@ -122,7 +150,16 @@ _[TBC once experiments are complete]_
 
 **✅ Deliverables**
 1. How does the performance compare to your original RAG application?  Test the advanced retrieval method using the RAGAS frameworks to quantify any improvements.  Provide results in a table.
-_[TBC once experiments are complete]_
+
+Below is the screenshot of the heatmap of the RAGAS evaluation of the selected four retrievers:
+![Retrievers RAGAS evaluation](../screenshots/retrievers%20comparisons%20using%20RAGAS%20evaluation.png)
+
+Initially used the usual naive retriever as the baseline and then progress to the others and finally settled for Parent Document retriever as you can see its quite a contender and for the combined (4 PDFs + 1 csv) dataset file, it rose up like a phoenix!
+
+This is still pending a new experiment, which will decide if Parent Document retriever can hold onto that top position! The new experiment will have better chunking strategy and also additional metrics to scrutinise each of the retrievers.
+
+See also [another experiement](https://github.com/neomatrix369/AIE7/blob/s09-assignment/09_Advanced_Retrieval/Combining%20evaluations%20LangSmith%20and%20Ragas.ipynb) performed using similar data:
+![📈 Quick Performance Overview - LangSmith and Ragas Evaluators (combined)](../screenshots/retrievers-quick-performance-evaluation-langsmith-and-ragas.jpg)
 
 2. Articulate the changes that you expect to make to your app in the second half of the course. How will you improve your application?
 _[TBC everything is complete]_
