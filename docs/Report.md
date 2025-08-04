@@ -83,7 +83,7 @@ While for Parent Docoment retrievers can be setup this way:
 ```python
 # chunk_size: Large enough to provide robust context to the LLM, often capturing a complete, self-contained section of the handbook.
 # chunk_overlap: Overlap is less critical for parent chunks as they are not directly used for similarity search.
-parent_text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500 chunk_overlap=0)
+parent_text_splitter = RecursiveCharacterTextSplitter(chunk_size=800 chunk_overlap=50)  ### improving to better config (previously chunk_size=1500 chunk_overlap=0)
 
 # chunk_size: Optimized for precise, accurate retrieval of specific facts and regulations.
 # chunk_overlap: Maintains continuity between small chunks without excessive redundancy.
