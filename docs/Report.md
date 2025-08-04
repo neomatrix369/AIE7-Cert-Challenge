@@ -1,4 +1,5 @@
-## Task 1: Defining the Problem and Audience
+# Task 1: Defining the Problem and Audience
+
 **✅ Deliverables**
 
 1. Write a succinct 1-sentence description of the problem
@@ -15,7 +16,10 @@
   1. 🧪 Hypothesis: The existing tooling used for search, retrieval, and generation of helpful and useful answers to customer inquiries does not rapidly accelerate an agent’s ability to deal with a large volume of customer complaints per day
 * **Audience:** We are building this application for customer service agents who work in Federal Student Loan companies
 
-## Task 2: Proposed Solution
+---
+
+# Task 2: Proposed Solution
+
 **✅ Deliverables**
 
 1. Write 1-2 paragraphs on your proposed solution.  How will it look and feel to the user?
@@ -30,7 +34,6 @@
 | **New borrowers** | Is applying for and securing a student loan in 2025 a terrible idea? |
 | **New borrowers** | How much loan money can I actually get from the government to go to school these days? Is there a cap? |
 | **New borrowers** | What grants and scholarships are available for free? |
-
 
 2. Describe the tools you plan to use in each part of your stack.  Write one sentence on why you made each tooling choice.
     1. LLM
@@ -76,7 +79,9 @@ Why Single Agent Works?:
 - Sufficient Complexity: The agentic behavior comes from intelligent tool orchestration and orchestrating multiple tools, not from multiple specialized agents
 - Clear Workflow: _Question_ → _Analyze_ → _Retrieve_ → _Synthesize_ → _Respond_ (with escalation branching) - linear enough for one agent to handle effectively
 
-## Task 3: Dealing with the Data
+---
+
+# Task 3: Dealing with the Data
 
 **✅ Deliverables**
 
@@ -115,7 +120,9 @@ parent_text_splitter = RecursiveCharacterTextSplitter(chunk_size=750 chunk_overl
 child_text_splitter = RecursiveCharacterTextSplitter(chunk_size=750 chunk_overlap=100)
 ```
 
-## Task 4: Building a Quick End-to-End Agentic RAG Prototype
+---
+
+# Task 4: Building a Quick End-to-End Agentic RAG Prototype
 
 **✅ Deliverables**
 - Build an end-to-end prototype and deploy it to a local endpoint
@@ -127,7 +134,7 @@ See [AIE7-Cert-Challenge](https://github.com/neomatrix369/AIE7-Cert-Challenge) |
 
 **Other screenshots:** [Swagger UI](../screenshots/swagger-ui-screenshot.png) | [Frontend blocking terminal/console](../screenshots/terminal-screen-frontend-app.jpg) | [Backend blocking terminal/console](../screenshots/terminal-screen-backend-app.jpg)
 
-## Task 5: Creating a Golden Test Data Set
+# Task 5: Creating a Golden Test Data Set
 
 **✅ Deliverables**
 1. Assess your pipeline using the RAGAS framework including key metrics faithfulness, response relevance, context precision, and context recall.  Provide a table of your output results.
@@ -136,7 +143,7 @@ _[TBC once experiments are complete]_
 2. What conclusions can you draw about the performance and effectiveness of your pipeline with this information?
 _[TBC once experiments are complete]_
 
-## Task 6: The Benefits of Advanced Retrieval
+# Task 6: The Benefits of Advanced Retrieval
 
 **✅ Deliverables**
 1. Describe the retrieval techniques that you plan to try and to assess in your application. Write one sentence on why you believe each technique will be useful for your use case.
@@ -146,7 +153,7 @@ Use the outcomes of the HW09 as justification on which method is use and why?
 2. Test a host of advanced retrieval techniques on your application.
 _[TBC once experiments are complete]_
 
-## Task 7: Assessing Performance
+# Task 7: Assessing Performance
 
 **✅ Deliverables**
 1. How does the performance compare to your original RAG application?  Test the advanced retrieval method using the RAGAS frameworks to quantify any improvements.  Provide results in a table.
