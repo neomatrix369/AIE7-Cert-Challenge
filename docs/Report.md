@@ -163,7 +163,7 @@ See [AIE7-Cert-Challenge](https://github.com/neomatrix369/AIE7-Cert-Challenge) |
 ![front-page-screenshot](../screenshots/front-page-screenshot.png)
 ![front-page-with-chat-session-screenshot](../screenshots/frontend-app-chat-session.jpg)
 ---
-**LangSmith monitoring:** [LangSmith Main page](../screenshots/LangSmith%20monitoring%20Main%20Page.jpg) | [LangSmith: ask_parent_document_llm_tool tool)](../screenshots/LangSmith%20monitoring%20ask_parent_document_llm_tool%20tool.jpg) | [LangSmith: StudentAid_Federal_Search tool](../screenshots/LangSmith%20monitoring%20StudentAid_Federal_Search%20tool.jpg)
+**LangSmith monitoring:** [LangSmith Main page](../screenshots/LangSmith%20monitoring%20Main%20Page.jpg) | [LangSmith: ask_naive_llm_tool tool)](../screenshots/LangSmith%20monitoring%20ask_naive_llm_tool%20tool.jpg) | [LangSmith: StudentAid_Federal_Search tool](../screenshots/LangSmith%20monitoring%20StudentAid_Federal_Search%20tool.jpg)
 
 **Other screenshots:** [Swagger UI](../screenshots/swagger-ui-screenshot.png) | [Frontend blocking terminal/console](../screenshots/terminal-screen-frontend-app.jpg) | [Backend blocking terminal/console](../screenshots/terminal-screen-backend-app.jpg) 
 
