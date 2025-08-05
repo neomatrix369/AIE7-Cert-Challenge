@@ -141,11 +141,10 @@ docker-compose down -v
 
 > **Note:** The docker-compose.yml is configured to:
 > - Build from the project root (`../../`) to access all `src/` dependencies
-> - Create a shared network (`student-loan-network`) for frontend communication
 > - Mount volumes for persistent cache and live development
 > - Include health checks and auto-restart policies
 
-**_NOTE: Please give the app a good 5 minutes or so to get started, as loading 2000+ docs inside the Docker container takes a bit of time. Till then we are not able to ping the backend server._**
+**_NOTE: Please give the app a good 'few' minutes or so to get started, as loading 2000+ docs inside the Docker container takes a bit of time. Till then we are not able to ping the backend server._**
 
 
 #### 3. Manual Docker Build and Run
@@ -415,7 +414,6 @@ docker run -d \
 - **Persistent cache:** Volume-mounted cache directory for RAGAS evaluations
 - **Read-only data:** Data directory mounted as read-only for security
 - **Auto-restart:** Container restarts on failure (unless-stopped policy)
-- **Shared networking:** Creates `student-loan-network` for frontend communication
 - **Resource monitoring:** Built-in container stats and logging
 - **Development support:** Live code mounting for development
 
@@ -444,7 +442,6 @@ docker-compose up --build
 └─────────────────┘    └──────────────────┘
           │                       │
           └───────────────────────┘
-             student-loan-network
 ```
 
 ### Production Deployment Considerations
