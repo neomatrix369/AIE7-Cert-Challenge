@@ -230,7 +230,6 @@ docker run -e DEBUG=true -p 3000:3000 student-loan-frontend
 └─────────────────┘    └──────────────────┘
           │                       │
           └───────────────────────┘
-             student-loan-network
 ```
 
 **Note:** When using frontend-only deployment, ensure the backend is running and accessible. The frontend will attempt container discovery first, then fall back to localhost:8000.

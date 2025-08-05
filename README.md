@@ -65,14 +65,14 @@ cd src/backend
 docker-compose down
 ```
 
+**_NOTE: Please give the app a good 'few' minutes or so to get started, as loading 2000+ docs inside the Docker container takes a bit of time. Till then we are not able to ping the backend server._**
+
 ### 3. Start the Frontend with Docker (new terminal, from the root folder of the project)
 ```bash
 cd frontend
 ./docker-start.sh
 # Frontend running at: http://localhost:3000
 ```
-
-**_NOTE: Please give the app a good 5 minutes or so to get started, as loading 2000+ docs inside the Docker container takes a bit of time. Till then we are not able to ping the backend server._**
 
 See [Docker deployment at frontend/README.md](./frontend/README.md#docker-deployment) for detailed Docker setup options
 
@@ -89,7 +89,7 @@ Navigate to **http://localhost:3000** and start asking federal student loan ques
 ## ✨ Core Features
 
 - **🎯 Federal Student Loan Expert** - Trained on official policies + real customer complaints
-- **🔍 Advanced RAG** - Multiple retrieval methods (Parent Document performs best)
+- **🔍 Standard RAG** - Multiple retrieval methods (Naive performs best)
 - **💬 Chat Interface** - Clean, responsive web interface for questions
 - **📊 Performance Metrics** - Response time, sources used, retrieval quality
 - **🔌 API Ready** - Single `/ask` endpoint for integration

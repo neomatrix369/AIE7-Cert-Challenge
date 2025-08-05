@@ -46,7 +46,7 @@ A streamlined FastAPI backend for the AIE7 Certification Challenge that provides
 ## Features
 
 ✅ **Single Purpose API** - One `/ask` endpoint for student loan questions  
-✅ **Best Performing RAG** - Uses Parent Document retrieval (highest RAGAS scores)  
+✅ **Best Performing RAG** - Uses Naive retrieval (highest RAGAS scores)  
 ✅ **Hybrid Knowledge Base** - Combines federal policies + real customer complaints  
 ✅ **Simple Request/Response** - JSON in, JSON out  
 ✅ **No Complex Features** - No file uploads, chat sessions, or user management  
@@ -141,11 +141,10 @@ docker-compose down -v
 
 > **Note:** The docker-compose.yml is configured to:
 > - Build from the project root (`../../`) to access all `src/` dependencies
-> - Create a shared network (`student-loan-network`) for frontend communication
 > - Mount volumes for persistent cache and live development
 > - Include health checks and auto-restart policies
 
-**_NOTE: Please give the app a good 5 minutes or so to get started, as loading 2000+ docs inside the Docker container takes a bit of time. Till then we are not able to ping the backend server._**
+**_NOTE: Please give the app a good 'few' minutes or so to get started, as loading 2000+ docs inside the Docker container takes a bit of time. Till then we are not able to ping the backend server._**
 
 
 #### 3. Manual Docker Build and Run
@@ -272,7 +271,7 @@ docker run --rm -v backend_cache_volume:/data -v $(pwd):/backup alpine tar xzf /
     "Document context 3: Servicer guidelines for hardship..."
   ],
   "tools_used": [
-    "ask_parent_document_llm_tool"
+    "ask_naive_llm_tool"
   ],
   "performance_metrics": {
     "response_time_ms": 3200,
@@ -281,7 +280,7 @@ docker run --rm -v backend_cache_volume:/data -v $(pwd):/backup alpine tar xzf /
     "tokens_used": 1850,
     "input_tokens": 420,
     "output_tokens": 1430,
-    "retrieval_method": "parent_document",
+    "retrieval_method": "naive",
     "total_contexts": 5
   }
 }
@@ -348,12 +347,12 @@ Based on RAGAS evaluation results:
 ## Architecture
 
 ```
-User Question → Parent Document RAG → Hybrid Knowledge Base → AI Response
+User Question → Naive RAG → Hybrid Knowledge Base → AI Response
                      ↓
                [Federal Policies + Customer Complaints]
 ```
 
-**Retrieval Method:** Parent Document (small-to-big chunking)  
+**Retrieval Method:** Naive (standard chunking)  
 **LLM:** GPT-4.1-nano for response generation  
 **Vector Store:** Qdrant (in-memory for development)  
 **Evaluation:** RAGAS framework validated
@@ -415,7 +414,6 @@ docker run -d \
 - **Persistent cache:** Volume-mounted cache directory for RAGAS evaluations
 - **Read-only data:** Data directory mounted as read-only for security
 - **Auto-restart:** Container restarts on failure (unless-stopped policy)
-- **Shared networking:** Creates `student-loan-network` for frontend communication
 - **Resource monitoring:** Built-in container stats and logging
 - **Development support:** Live code mounting for development
 
@@ -444,7 +442,6 @@ docker-compose up --build
 └─────────────────┘    └──────────────────┘
           │                       │
           └───────────────────────┘
-             student-loan-network
 ```
 
 ### Production Deployment Considerations

@@ -5,7 +5,7 @@ Federal Student Loan Customer Service RAG API
 
 Based on Project Completion Plan requirements:
 - Single /ask endpoint for student loan questions
-- Uses best performing retrieval method (Parent Document)
+- Uses best performing retrieval method (Naive)
 - Simple request/response structure
 - No file upload, chat sessions, or complex features
 """
@@ -22,7 +22,7 @@ from typing import Optional, List
 
 # Import our RAG components
 from src.agents.build_graph_agent import get_graph_agent
-from src.agents.llm_tools_for_toolbelt import ask_parent_document_llm_tool
+from src.agents.llm_tools_for_toolbelt import ask_naive_llm_tool
 from langchain_core.messages import HumanMessage
 from src.evaluation.tool_calls_parser_for_eval import (
     process_agent_response,
@@ -100,9 +100,9 @@ class StudentLoanResponse(BaseModel):
 
 # Global agent initialization
 try:
-    # Initialize the best performing agent (Parent Document from evaluation results)
-    logger.info("🚀 Initializing Parent Document RAG agent...")
-    rag_agent = get_graph_agent([ask_parent_document_llm_tool])
+    # Initialize the best performing agent (Naive from evaluation results)
+    logger.info("🚀 Initializing Naive RAG agent...")
+    rag_agent = get_graph_agent([ask_naive_llm_tool])
     logger.info("✅ RAG agent initialized successfully")
 except Exception as e:
     logger.error(f"❌ Failed to initialize RAG agent: {str(e)}")
@@ -152,7 +152,7 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
     """
     Ask a question about federal student loans
 
-    This endpoint uses the best performing RAG retrieval method (Parent Document)
+    This endpoint uses the best performing RAG retrieval method (Naive)
     based on RAGAS evaluation results. It searches through:
     - Federal student loan policy documents (PDF)
     - Real customer complaint scenarios (CSV)
@@ -168,7 +168,7 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
         # Prepare input for the agent
         inputs = {"messages": [HumanMessage(content=request.question.strip())]}
 
-        logger.info("🔍 Invoking RAG agent with Parent Document retrieval method")
+        logger.info("🔍 Invoking RAG agent with Naive retrieval method")
 
         # Track performance timing
         start_time = time.time()
@@ -214,7 +214,7 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
         if contexts:
             sources_count = len(
                 contexts
-            )  # Parent Document retriever typically returns 5 contexts
+            )  # Naive retriever typically returns 5 contexts
             logger.info(
                 f"📚 Retrieved {sources_count} context sources from hybrid dataset"
             )
@@ -238,7 +238,7 @@ async def ask_student_loan_question(request: StudentLoanQuestion):
             contexts=contexts,
             question_text=request.question,
             answer_text=answer,
-            retrieval_method="parent_document",
+            retrieval_method="naive",
         )
 
         # Format source details with relevance scores
