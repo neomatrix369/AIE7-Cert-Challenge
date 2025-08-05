@@ -16,10 +16,37 @@ def tavily_studentaid_search(query: str) -> str:
     Use this when you need authoritative federal government information.
 
     Args:
-        query: Search query for federal student aid topics
+        query (str): Search query for federal student aid topics
 
     Returns:
-        Formatted search results from StudentAid.gov
+        str: Formatted search results containing:
+            - Header with query information
+            - AI-generated summary answer (if available)
+            - Up to 3 official results with:
+                • Title from StudentAid.gov page
+                • Content snippet (200 characters max)
+                • Full URL for verification
+            - Error message if search fails
+
+    Example Output:
+        "StudentAid.gov Search Results for: income driven repayment
+
+        Summary: Income-driven repayment plans calculate your monthly payment...
+
+        Official Federal Information:
+        1. Income-Driven Repayment Plans
+           These plans calculate your monthly payment based on your income...
+           URL: https://studentaid.gov/manage-loans/repayment/plans/income-driven
+
+        2. Apply for Income-Driven Repayment
+           Complete your IDR application online or by mail...
+           URL: https://studentaid.gov/app/ibrInstructions.action"
+
+    Technical Details:
+        - Search depth: Advanced (comprehensive crawling)
+        - Max results: 3 (focused, high-quality results)
+        - Domain restriction: studentaid.gov only
+        - Timeout: Handled with graceful error messages
     """
     try:
         logger.info(f"🔍 [StudentAid Search] Searching for: {query}")
@@ -62,10 +89,37 @@ def tavily_mohela_search(query: str) -> str:
     Use this when users have Mohela-serviced loans and need servicer-specific help.
 
     Args:
-        query: Search query for Mohela servicer-specific information
+        query (str): Search query for Mohela servicer-specific information
 
     Returns:
-        Formatted search results from Mohela
+        str: Formatted search results containing:
+            - Header with query information
+            - AI-generated summary answer (if available)
+            - Up to 3 Mohela-specific results with:
+                • Title from Mohela website page
+                • Content snippet (200 characters max)
+                • Full URL for verification
+            - Error message if search fails
+
+    Example Output:
+        "Mohela Search Results for: payment options
+
+        Summary: Mohela offers several payment methods including...
+
+        Mohela Servicer Information:
+        1. Making Payments
+           You can make payments online, by phone, or by mail...
+           URL: https://servicing.mohela.com/payments
+
+        2. Payment Plans
+           Mohela offers standard and income-driven repayment plans...
+           URL: https://mohela.com/repayment-options"
+
+    Technical Details:
+        - Search depth: Advanced (comprehensive crawling)
+        - Max results: 3 (focused, servicer-specific results)
+        - Domain restriction: mohela.com and servicing.mohela.com
+        - Timeout: Handled with graceful error messages
     """
     try:
         logger.info(f"🔍 [Mohela Search] Searching for: {query}")
@@ -109,11 +163,38 @@ def tavily_student_loan_search(query: str, source: Optional[str] = None) -> str:
     they're unsure which source has the information they need.
 
     Args:
-        query: Search query for student loan information requiring comparison
-        source: Optional - "studentaid" for StudentAid.gov only, "mohela" for Mohela only
+        query (str): Search query for comprehensive student loan information
+        source (Optional[str]): "studentaid" for StudentAid.gov only, "mohela" for Mohela only, None for both
 
     Returns:
-        Formatted search results comparing both sources
+        str: Formatted search results containing:
+            - Header with query information
+            - AI-generated summary answer (if available)
+            - Up to 5 results from multiple sources:
+                • Federal sources (StudentAid.gov)
+                • Servicer sources (Mohela)
+                • Title, content snippet (200 chars), and URL for each
+            - Error message if search fails
+
+    Example Output:
+        "Comprehensive Student Loan Search Results for: loan forgiveness
+
+        Summary: Student loan forgiveness programs include PSLF, IDR forgiveness...
+
+        Federal and Servicer Information:
+        1. Public Service Loan Forgiveness
+           PSLF forgives remaining balance after 120 qualifying payments...
+           URL: https://studentaid.gov/manage-loans/forgiveness-cancellation/public-service
+
+        2. Mohela PSLF Processing
+           As the PSLF servicer, Mohela handles PSLF applications...
+           URL: https://mohela.com/pslf"
+
+    Technical Details:
+        - Search depth: Advanced (comprehensive crawling)
+        - Max results: 5 (broader coverage across sources)
+        - Domain scope: Multiple official sources (federal + servicers)
+        - Comparison focus: Shows both policy and implementation perspectives
     """
     try:
         logger.info(
