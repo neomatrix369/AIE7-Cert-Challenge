@@ -46,7 +46,7 @@ A streamlined FastAPI backend for the AIE7 Certification Challenge that provides
 ## Features
 
 ✅ **Single Purpose API** - One `/ask` endpoint for student loan questions  
-✅ **Best Performing RAG** - Uses Parent Document retrieval (highest RAGAS scores)  
+✅ **Best Performing RAG** - Uses Naive retrieval (highest RAGAS scores)  
 ✅ **Hybrid Knowledge Base** - Combines federal policies + real customer complaints  
 ✅ **Simple Request/Response** - JSON in, JSON out  
 ✅ **No Complex Features** - No file uploads, chat sessions, or user management  
@@ -271,7 +271,7 @@ docker run --rm -v backend_cache_volume:/data -v $(pwd):/backup alpine tar xzf /
     "Document context 3: Servicer guidelines for hardship..."
   ],
   "tools_used": [
-    "ask_parent_document_llm_tool"
+    "ask_naive_llm_tool"
   ],
   "performance_metrics": {
     "response_time_ms": 3200,
@@ -280,7 +280,7 @@ docker run --rm -v backend_cache_volume:/data -v $(pwd):/backup alpine tar xzf /
     "tokens_used": 1850,
     "input_tokens": 420,
     "output_tokens": 1430,
-    "retrieval_method": "parent_document",
+    "retrieval_method": "naive",
     "total_contexts": 5
   }
 }
@@ -347,12 +347,12 @@ Based on RAGAS evaluation results:
 ## Architecture
 
 ```
-User Question → Parent Document RAG → Hybrid Knowledge Base → AI Response
+User Question → Naive RAG → Hybrid Knowledge Base → AI Response
                      ↓
                [Federal Policies + Customer Complaints]
 ```
 
-**Retrieval Method:** Parent Document (small-to-big chunking)  
+**Retrieval Method:** Naive (standard chunking)  
 **LLM:** GPT-4.1-nano for response generation  
 **Vector Store:** Qdrant (in-memory for development)  
 **Evaluation:** RAGAS framework validated

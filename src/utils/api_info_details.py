@@ -14,7 +14,7 @@ def get_api_info_details():
                 "customer_data": "4,547 real customer complaints and scenarios",
                 "total_documents": "Hybrid dataset with policy + complaint knowledge",
             },
-            "retrieval_method": "Parent Document (best performing from RAGAS evaluation)",
+            "retrieval_method": "Naive (best performing from RAGAS evaluation)",
             "evaluation_metrics": {
                 "context_recall": "0.89",
                 "faithfulness": "0.82",
