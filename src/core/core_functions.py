@@ -73,6 +73,7 @@ def load_and_prepare_csv_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
         folder = DATA_FOLDER
     if not os.path.exists(folder):
         folder = "../" + DEFAULT_FOLDER_LOCATION
+
     loader = CSVLoader(
         file_path=f"{folder}/complaints.csv",
         metadata_columns=[
@@ -98,34 +99,79 @@ def load_and_prepare_csv_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
     )
 
     logger.info(f"📊 Loading student loan complaints from: {folder}/complaints.csv")
-    loan_complaint_data = loader.load()
 
+    # STEP 1: Load raw data
+    loan_complaint_data = loader.load()
+    initial_count = len(loan_complaint_data)
+    logger.info(f"📋 STEP 1 - Raw CSV loaded: {initial_count:,} records")
+
+    # STEP 2: Set page content from narrative
     for doc in loan_complaint_data:
         doc.page_content = doc.metadata["Consumer complaint narrative"]
 
+    logger.info(
+        f"📝 STEP 2 - Page content set: {len(loan_complaint_data):,} records (no change)"
+    )
     gc.collect()
 
-    ### Cleaning the original documents
+    # STEP 3: Apply quality filters with detailed tracking
+    logger.info(f"🔍 STEP 3 - Applying quality filters...")
 
-    logger.info(f"📋 Original complaint documents count: {len(loan_complaint_data)}")
+    filter_stats = {
+        "too_short": 0,
+        "too_many_xxxx": 0,
+        "empty_or_na": 0,
+        "multiple_issues": 0,
+        "valid": 0,
+    }
 
     filtered_docs = []
-    for doc in loan_complaint_data:
+
+    for i, doc in enumerate(loan_complaint_data):
         narrative = doc.metadata.get("Consumer complaint narrative", "")
-        if (
-            len(narrative.strip()) < 100
-            or narrative.count("XXXX") > 5
-            or narrative.strip() in ["", "None", "N/A"]
-        ):
-            continue
+        issues = []
 
-        doc.page_content = f"Customer Issue: {doc.metadata.get('Issue', 'Unknown')}\n"
-        doc.page_content += f"Product: {doc.metadata.get('Product', 'Unknown')}\n"
-        doc.page_content += f"Complaint Details: {narrative}"
+        # Check each filter condition
+        if len(narrative.strip()) < 100:
+            filter_stats["too_short"] += 1
+            issues.append("length")
 
-        filtered_docs.append(doc)
+        if narrative.count("XXXX") > 5:
+            filter_stats["too_many_xxxx"] += 1
+            issues.append("redaction")
 
-    logger.info(f"✅ Filtered complaint documents count: {len(filtered_docs)}")
+        if narrative.strip() in ["", "None", "N/A"]:
+            filter_stats["empty_or_na"] += 1
+            issues.append("empty")
+
+        # Track records with multiple issues
+        if len(issues) > 1:
+            filter_stats["multiple_issues"] += 1
+
+        # Keep valid records
+        if not issues:
+            filter_stats["valid"] += 1
+            doc.page_content = (
+                f"Customer Issue: {doc.metadata.get('Issue', 'Unknown')}\n"
+            )
+            doc.page_content += f"Product: {doc.metadata.get('Product', 'Unknown')}\n"
+            doc.page_content += f"Complaint Details: {narrative}"
+            filtered_docs.append(doc)
+
+    # Log detailed filter results
+    logger.info(f"📊 FILTER RESULTS:")
+    logger.info(f"   ❌ Too short (< 100 chars): {filter_stats['too_short']:,}")
+    logger.info(f"   ❌ Too many XXXX (> 5): {filter_stats['too_many_xxxx']:,}")
+    logger.info(f"   ❌ Empty/None/N/A: {filter_stats['empty_or_na']:,}")
+    logger.info(f"   ⚠️  Multiple issues: {filter_stats['multiple_issues']:,}")
+
+    total_filtered = initial_count - len(filtered_docs)
+    retention_rate = (len(filtered_docs) / initial_count) * 100
+
+    logger.info(f"📈 SUMMARY:")
+    logger.info(f"   ✅ Valid records kept: {len(filtered_docs):,}")
+    logger.info(f"   🗑️  Total filtered out: {total_filtered:,}")
+    logger.info(f"   📊 Retention rate: {retention_rate:.1f}%")
 
     gc.collect()
     return filtered_docs.copy()
@@ -136,7 +182,9 @@ def split_documents(documents):
         f"📄 Splitting {len(documents)} documents into chunks (size=750, overlap=100)"
     )
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
-    logger.info(f"text_splitter: Chunk Size: {text_splitter._chunk_size} | Chunk Overlap: {text_splitter._chunk_overlap}")
+    logger.info(
+        f"text_splitter: Chunk Size: {text_splitter._chunk_size} | Chunk Overlap: {text_splitter._chunk_overlap}"
+    )
     split_docs = text_splitter.split_documents(documents)
     logger.info(f"✅ Created {len(split_docs)} document chunks")
     return split_docs

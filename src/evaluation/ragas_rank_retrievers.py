@@ -9,6 +9,44 @@ logger = setup_logging(__name__)
 
 
 class RetrieverRanker:
+    """
+    Comprehensive RAGAS-based retriever performance analysis and ranking system.
+
+    Evaluates RAG retrieval methods across multiple quality metrics and provides
+    statistical analysis, ranking, and visualization capabilities for retriever comparison.
+
+    Core RAGAS Metrics (All 0-1 scale, higher=better):
+    - **context_recall**: Proportion of relevant contexts retrieved (retrieval quality)
+    - **faithfulness**: Factual accuracy of generated responses (hallucination check)
+    - **answer_relevancy**: How relevant the response is to the original question
+    - **factual_correctness**: Semantic accuracy compared to ground truth
+    - **context_entity_recall**: Entity extraction completeness from contexts
+    - **noise_sensitivity_relevant**: Robustness to irrelevant/noisy contexts
+
+    Advanced Metrics:
+    - **llm_context_precision_without_reference**: LLM-based precision without ground truth
+    - **llm_context_precision_with_reference**: LLM-based precision with ground truth
+    - **non_llm_context_precision_with_reference**: Traditional precision metrics
+    - **faithful_rate**: Rate of faithful (non-hallucinated) responses
+
+    Features:
+    - Multi-metric ranking with customizable weights
+    - Statistical significance testing across retrievers
+    - Performance visualization and heatmap generation
+    - Cost-performance trade-off analysis
+    - Automatic normalization for fair comparison
+
+    Usage:
+        >>> ranker = RetrieverRanker('ragas-evaluation-metrics.csv')
+        >>> rankings = ranker.rank_retrievers(['context_recall', 'faithfulness'])
+        >>> ranker.plot_performance_heatmap()
+        >>> stats = ranker.statistical_significance_test('context_recall')
+
+    Data Format Expected:
+        CSV with columns: retriever, context_recall, faithfulness, answer_relevancy, etc.
+        Each row represents one evaluation run for a specific retriever.
+    """
+
     def __init__(self, csv_path):
         self.df = pd.read_csv(csv_path)
         self.normalized_df = self._normalize_data()

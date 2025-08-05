@@ -133,7 +133,11 @@ def parse_langchain_messages(messages) -> dict:
                 )
 
         # Handle tool messages (results)
-        elif hasattr(message, "name") and hasattr(message, "content") and (message.name is not None):
+        elif (
+            hasattr(message, "name")
+            and hasattr(message, "content")
+            and (message.name is not None)
+        ):
             tool_name = message.name
             content = message.content
             tool_call_id = getattr(message, "tool_call_id", "")
@@ -154,7 +158,9 @@ def parse_langchain_messages(messages) -> dict:
             "total_calls": len(tool_calls),
             "total_results": len(tool_results),
             "total_contexts": len(contexts),
-            "tools": list(set([r["tool"] for r in tool_results if r["tool"] is not None])),
+            "tools": list(
+                set([r["tool"] for r in tool_results if r["tool"] is not None])
+            ),
         },
     }
 

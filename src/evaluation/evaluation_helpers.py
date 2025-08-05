@@ -74,9 +74,9 @@ def generate_responses_for_golden_dataset(
     golden_master, graph_agent, pause_secs_between_each_run: int = 0
 ):
     # Initialize metadata storage if it doesn't exist
-    if not hasattr(golden_master, '_custom_metadata'):
+    if not hasattr(golden_master, "_custom_metadata"):
         golden_master._custom_metadata = {}
-    
+
     for idx, test_row in enumerate(tqdm(golden_master)):
         inputs = {"messages": [HumanMessage(content=test_row.eval_sample.user_input)]}
         response = graph_agent.invoke(inputs)
@@ -90,17 +90,17 @@ def generate_responses_for_golden_dataset(
             "tools_used": parsed_data.get("summary", {}).get("tools", []),
             "num_contexts": len(evaluation_contexts),
         }
-        
+
         # Assign supported RAGAS fields
         test_row.eval_sample.response = eval_sample["response"]
         test_row.eval_sample.retrieved_contexts = eval_sample["retrieved_contexts"]
-        
+
         # Store custom metadata separately using sample index as key
         sample_id = f"sample_{idx}"
         golden_master._custom_metadata[sample_id] = {
             "tools_used": eval_sample["tools_used"],
             "num_contexts": eval_sample["num_contexts"],
-            "user_input": eval_sample["user_input"]  # For matching
+            "user_input": eval_sample["user_input"],  # For matching
         }
 
         if pause_secs_between_each_run > 0:
@@ -111,15 +111,15 @@ def generate_responses_for_golden_dataset(
 def display_dataset_with_metadata(golden_master):
     """Display dataset as pandas DataFrame with custom metadata columns"""
     df = golden_master.to_pandas()
-    if hasattr(golden_master, '_custom_metadata'):
+    if hasattr(golden_master, "_custom_metadata"):
         tools_used = []
         num_contexts = []
         for idx in range(len(df)):
             meta = golden_master._custom_metadata.get(f"sample_{idx}", {})
             tools_used.append(meta.get("tools_used", []))
             num_contexts.append(meta.get("num_contexts", 0))
-        df['tools_used'] = tools_used
-        df['num_contexts'] = num_contexts
+        df["tools_used"] = tools_used
+        df["num_contexts"] = num_contexts
     return df
 
 

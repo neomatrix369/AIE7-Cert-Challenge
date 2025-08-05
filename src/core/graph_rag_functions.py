@@ -46,6 +46,60 @@ embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
 @memory.cache
 def get_vectorstore_after_loading_students_loan_data_into_qdrant():
+    """
+    Load and process hybrid federal student loan dataset into Qdrant vector store.
+
+    Data Processing Pipeline:
+    1. Load 4 federal student loan PDF documents (~615 chunks)
+       - Academic Calendars & Cost of Attendance
+       - Applications & Verification Guide
+       - Federal Pell Grant Program
+       - Direct Loan Program
+
+    2. Load customer complaints CSV (4,547 → 825 → 480 after quality filtering)
+       - Filters: narratives < 100 chars, excessive redaction (>5 XXXX), empty content
+       - Structured format: "Customer Issue: [Issue]\\nProduct: [Product]\\nComplaint Details: [narrative]"
+
+    3. Text chunking optimized for hybrid content:
+       - Chunk size: 750 characters (optimal for both PDFs and complaints)
+       - Overlap: 100 characters for context preservation
+       - Strategy: RecursiveCharacterTextSplitter for intelligent boundaries
+
+    4. Vector embedding generation:
+       - Model: OpenAI text-embedding-3-small (1536 dimensions)
+       - Distance metric: Cosine similarity for semantic search
+       - Total vectors: ~1,095 (PDF: 615 + Complaints: 480)
+
+    5. Qdrant vector store configuration:
+       - Deployment: In-memory (:memory:) for development
+       - Collection: 'loan_data' with cosine distance
+       - Memory footprint: ~39.2MB including embeddings and metadata
+
+    Returns:
+        tuple: (student_loan_docs_dataset, internal_vector_store)
+            - student_loan_docs_dataset (list): Raw combined documents before chunking
+            - internal_vector_store (QdrantVectorStore): Ready-to-use vector store with hybrid knowledge base
+
+    Performance Characteristics:
+        - Loading time: ~30-60 seconds (cached after first run)
+        - Memory usage: 39.2MB (efficient for hybrid dataset size)
+        - Search performance: Sub-second retrieval for k=5 queries
+        - Retention rate: 10.7% from raw CSV (4,547 → 480 quality complaints)
+
+    Cache Behavior:
+        - Cached with joblib Memory to avoid expensive reprocessing
+        - Cache invalidation: Manual deletion of cache folder required for data updates
+        - Cache location: ./cache/ (configurable via CACHE_FOLDER env var)
+
+    Usage Note:
+        This function is called once at module import to initialize global vector_store.
+        Subsequent calls use cached results for fast startup.
+
+    Example:
+        >>> docs, vs = get_vectorstore_after_loading_students_loan_data_into_qdrant()
+        >>> retriever = vs.as_retriever(search_kwargs={"k": 5})
+        >>> results = retriever.get_relevant_documents("What is FAFSA?")
+    """
     logger.info(f"📚 Starting to load student loan hybrid dataset")
     student_loan_pdf_docs_dataset = load_and_prepare_pdf_loan_docs()
     student_loan_complaint_docs_dataset = load_and_prepare_csv_loan_docs()
@@ -58,7 +112,9 @@ def get_vectorstore_after_loading_students_loan_data_into_qdrant():
     logger.info(f"✅ Finished loading student loan hybrid dataset")
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
-    logger.info(f"text_splitter: Chunk Size: {text_splitter._chunk_size} | Chunk Overlap: {text_splitter._chunk_overlap}")
+    logger.info(
+        f"text_splitter: Chunk Size: {text_splitter._chunk_size} | Chunk Overlap: {text_splitter._chunk_overlap}"
+    )
     split_documents = text_splitter.split_documents(student_loan_docs_dataset)
     logger.info(
         f"📄 Split hybrid dataset into {len(split_documents)} chunks (size=750, overlap=100)"
@@ -96,6 +152,44 @@ naive_retriever = vector_store.as_retriever(search_kwargs={"k": 5})
 
 
 def naive_retrieve(state):
+    """
+    Simple cosine similarity retrieval - the baseline RAG method.
+
+    **🎯 RETRIEVAL STRATEGY: Direct Vector Similarity**
+    - Uses raw cosine similarity between question embedding and document embeddings
+    - No query enhancement, reranking, or document expansion
+    - Single-step retrieval: Question → Vector Search → Top-K Documents
+
+    **⚡ PERFORMANCE CHARACTERISTICS:**
+    - **Speed**: Fastest (single vector search operation)
+    - **RAGAS Metrics**: Best overall performer (context_recall: 0.637, faithfulness: 0.905)
+    - **Token Usage**: Lowest (no additional LLM calls)
+    - **Reliability**: Most predictable results
+
+    **🔧 TECHNICAL IMPLEMENTATION:**
+    - Embedding Model: OpenAI text-embedding-3-small (1536 dimensions)
+    - Distance Metric: Cosine similarity for semantic matching
+    - Retrieval Count: Fixed k=5 documents
+    - Relevance Scoring: Includes cosine distance scores as metadata
+
+    **📊 WHEN TO USE:**
+    - ✅ General-purpose queries with clear intent
+    - ✅ Performance-critical applications (fastest response)
+    - ✅ When you need consistent, reliable results
+    - ✅ Budget-conscious deployments (minimal API costs)
+
+    **🆚 KEY DIFFERENCES vs Other Methods:**
+    - **vs Contextual Compression**: No reranking - accepts vector similarity as final ranking
+    - **vs Multi-Query**: Single query approach - no query expansion or diversification
+    - **vs Parent Document**: Returns exact chunks - no document expansion or context restoration
+
+    Args:
+        state (dict): LangGraph state containing 'question' key
+
+    Returns:
+        dict: Updated state with 'context' key containing 5 retrieved documents,
+              each with relevance_score metadata for evaluation
+    """
     logger.info(f"🔍 [Naive] Retrieving docs for: {state['question'][:100]}...")
     # Use similarity_search_with_score to get relevance scores
     docs_with_scores = vector_store.similarity_search_with_score(state["question"], k=5)
@@ -175,6 +269,48 @@ contextual_compression_retriever = vector_store.as_retriever(search_kwargs={"k":
 
 
 def contextual_compression_retrieve(state):
+    """
+    AI-powered reranking retrieval for premium quality results.
+
+    **🎯 RETRIEVAL STRATEGY: Retrieve-Then-Rerank Pipeline**
+    - Step 1: Retrieve 20 candidates using cosine similarity (broad recall)
+    - Step 2: AI reranking with Cohere Rerank-v3.5 for semantic relevance
+    - Step 3: Return top 5 most relevant after intelligent compression
+
+    **⚡ PERFORMANCE CHARACTERISTICS:**
+    - **Speed**: Slower (2-step process: retrieval + reranking)
+    - **Quality**: Premium semantic matching beyond vector similarity
+    - **RAGAS Metrics**: Balanced performance with improved semantic relevance
+    - **Cost**: Higher (Cohere API calls for reranking)
+
+    **🔧 TECHNICAL IMPLEMENTATION:**
+    - Base Retrieval: k=20 candidates from vector store
+    - AI Reranker: Cohere Rerank-v3.5 model for cross-encoder scoring
+    - Final Selection: Top 5 after AI-powered reranking
+    - Pipeline: LangChain ContextualCompressionRetriever orchestration
+
+    **📊 WHEN TO USE:**
+    - ✅ Complex questions requiring nuanced semantic understanding
+    - ✅ When precision is more important than speed
+    - ✅ Questions with multiple possible interpretations
+    - ✅ Premium applications where quality justifies cost
+
+    **🆚 KEY DIFFERENCES vs Other Methods:**
+    - **vs Naive**: Adds AI reranking step - smarter relevance scoring beyond cosine similarity
+    - **vs Multi-Query**: Single query with better ranking vs multiple queries with standard ranking
+    - **vs Parent Document**: Works with fixed chunks - no document size expansion
+
+    **💡 UNIQUE ADVANTAGE:**
+    Cross-encoder reranking understands query-document relationships better than
+    bi-encoder similarity, leading to more contextually appropriate results.
+
+    Args:
+        state (dict): LangGraph state containing 'question' key
+
+    Returns:
+        dict: Updated state with 'context' key containing 5 AI-reranked documents
+              optimized for semantic relevance
+    """
     logger.info(
         f"🔍 [Contextual Compression] Retrieving docs for: {state['question'][:100]}..."
     )
@@ -216,6 +352,56 @@ multi_query_retriever = MultiQueryRetriever.from_llm(retriever=naive_retriever, 
 
 
 def multi_query_retrieve(state):
+    """
+    LLM-powered query expansion for comprehensive coverage.
+
+    **🎯 RETRIEVAL STRATEGY: Query Diversification Approach**
+    - Step 1: LLM generates multiple query variations from original question
+    - Step 2: Execute parallel vector searches for each generated query
+    - Step 3: Combine and deduplicate results from all query variations
+    - Step 4: Return diverse document set covering multiple query angles
+
+    **⚡ PERFORMANCE CHARACTERISTICS:**
+    - **Speed**: Moderate (LLM query generation + multiple vector searches)
+    - **Coverage**: Excellent (captures different aspects/interpretations)
+    - **RAGAS Metrics**: Good query expansion with solid performance
+    - **Robustness**: Handles ambiguous or multi-faceted questions well
+
+    **🔧 TECHNICAL IMPLEMENTATION:**
+    - Query Generator: GPT-4.1-nano creates 3-5 alternative phrasings
+    - Base Retriever: Naive retriever (k=5) for each generated query
+    - Deduplication: LangChain handles duplicate document removal
+    - Result Aggregation: Combines unique documents from all query variations
+
+    **📊 WHEN TO USE:**
+    - ✅ Ambiguous questions with multiple valid interpretations
+    - ✅ Complex topics requiring different perspectives
+    - ✅ When user intent is unclear or broad
+    - ✅ Research-style queries needing comprehensive coverage
+
+    **🆚 KEY DIFFERENCES vs Other Methods:**
+    - **vs Naive**: Multiple query angles vs single query - better coverage but slower
+    - **vs Contextual Compression**: Query expansion vs result reranking - different optimization focus
+    - **vs Parent Document**: Multiple queries on same chunks vs single query on larger context
+
+    **💡 UNIQUE ADVANTAGE:**
+    Captures documents that might be missed by single query due to vocabulary
+    mismatch or different conceptual framing of the same information.
+
+    **🔍 EXAMPLE QUERY EXPANSION:**
+    Original: "How do I apply for income-driven repayment?"
+    Generated:
+    - "IDR application process steps"
+    - "Income-based repayment plan enrollment"
+    - "How to submit income driven repayment forms"
+
+    Args:
+        state (dict): LangGraph state containing 'question' key
+
+    Returns:
+        dict: Updated state with 'context' key containing deduplicated documents
+              from multiple query perspectives (typically 5-15 documents)
+    """
     logger.info(f"🔍 [Multi-Query] Retrieving docs for: {state['question'][:100]}...")
     retrieved_docs = multi_query_retriever.invoke(state["question"])
     logger.info(
@@ -247,7 +433,9 @@ parent_docs = student_loan_docs_dataset.copy()
 # child_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
 ### Same as parent splitting
 child_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
-logger.info(f"child_splitter: Chunk Size: {child_splitter._chunk_size} | Chunk Overlap: {child_splitter._chunk_overlap}")
+logger.info(
+    f"child_splitter: Chunk Size: {child_splitter._chunk_size} | Chunk Overlap: {child_splitter._chunk_overlap}"
+)
 
 vector_store.client.create_collection(
     collection_name="full_documents",
@@ -272,6 +460,61 @@ parent_document_retriever.add_documents(parent_docs, ids=None)
 
 
 def parent_document_retrieve(state):
+    """
+    Small-to-big hierarchical retrieval for maximum context preservation.
+
+    **🎯 RETRIEVAL STRATEGY: Hierarchical Document Expansion**
+    - Step 1: Index small child chunks (750 chars) for precise semantic matching
+    - Step 2: Vector search finds most relevant child chunks
+    - Step 3: Retrieve full parent documents containing matching child chunks
+    - Step 4: Return expanded context with complete document boundaries
+
+    **⚡ PERFORMANCE CHARACTERISTICS:**
+    - **Speed**: Slower (dual vector store operations + document mapping)
+    - **Context**: Maximum - returns full documents vs small chunks
+    - **RAGAS Metrics**: Currently lowest performer (context_recall: 0.268, faithfulness: 0.653)
+    - **Memory**: Higher (stores both child chunks and full parent documents)
+
+    **🔧 TECHNICAL IMPLEMENTATION:**
+    - Child Vectorstore: 750-char chunks in 'full_documents' collection
+    - Parent Docstore: InMemoryStore with complete original documents
+    - Retrieval Process: ParentDocumentRetriever orchestrates child→parent mapping
+    - Score Mapping: Child chunk relevance scores mapped to parent documents
+
+    **📊 WHEN TO USE:**
+    - ✅ Questions requiring full document context (policies, procedures)
+    - ✅ Multi-section documents where context spans chunk boundaries
+    - ✅ Legal/regulatory content where complete context is critical
+    - ⚠️ Currently underperforming - consider optimization before production use
+
+    **🆚 KEY DIFFERENCES vs Other Methods:**
+    - **vs Naive**: Returns full documents vs 750-char chunks - much more context
+    - **vs Contextual Compression**: Context expansion vs result reranking - different goals
+    - **vs Multi-Query**: Document size expansion vs query diversification
+
+    **💡 THEORETICAL ADVANTAGE:**
+    Provides complete document context to prevent information fragmentation,
+    especially valuable for complex documents where relevant information spans
+    multiple chunks.
+
+    **⚠️ CURRENT PERFORMANCE NOTE:**
+    This method currently shows lower RAGAS scores, possibly due to:
+    - Information dilution in large parent documents
+    - Misalignment between child chunk relevance and parent document utility
+    - Need for better chunk→parent scoring methodology
+
+    **🔧 IMPLEMENTATION DETAILS:**
+    - Child Splitter: Same as parent (750 chars, 100 overlap) - consider smaller chunks
+    - Dual Storage: Qdrant for child vectors + InMemoryStore for parent docs
+    - Score Transfer: Maps highest child relevance score to parent document
+
+    Args:
+        state (dict): LangGraph state containing 'question' key
+
+    Returns:
+        dict: Updated state with 'context' key containing full parent documents
+              with relevance scores transferred from matching child chunks
+    """
     logger.info(
         f"🔍 [Parent Document] Retrieving docs for: {state['question'][:100]}..."
     )
