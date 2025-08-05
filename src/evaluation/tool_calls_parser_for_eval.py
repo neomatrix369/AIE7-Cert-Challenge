@@ -823,7 +823,7 @@ def build_performance_metrics(
         "retrieval_time_ms": retrieval_time_ms,
         "generation_time_ms": generation_time_ms,
         # -- we don't know for sure so best not to return to user
-        # "confidence_score": 0.85,  # Typical confidence for Parent Document retrieval
+        # "confidence_score": 0.85,  # Typical confidence for Naive retrieval
         "tokens_used": token_usage["total_tokens"],
         "input_tokens": token_usage["input_tokens"],
         "output_tokens": token_usage["output_tokens"],
