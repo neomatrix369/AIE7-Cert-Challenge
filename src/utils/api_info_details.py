@@ -11,7 +11,7 @@ def get_api_info_details():
                     "The Federal Pell Grant Program",
                     "The Direct Loan Program",
                 ],
-                "customer_data": "4,547 real customer complaints and scenarios",
+                "customer_data": "480 quality-filtered customer complaints (from 4,547 raw records of real customer complaints and scenarios)",
                 "total_documents": "Hybrid dataset with policy + complaint knowledge",
             },
             "retrieval_method": "Naive (best performing from RAGAS evaluation)",

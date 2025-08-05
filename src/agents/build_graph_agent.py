@@ -39,6 +39,48 @@ def should_continue(state):
 
 
 def get_graph_agent(additional_tools: list):
+    """
+    Create a LangGraph-based conversational agent with RAG tool orchestration.
+
+    Builds a state-driven agent that can:
+    - Select optimal RAG retrieval methods based on question complexity
+    - Coordinate multiple tools (internal RAG + external search APIs)
+    - Maintain conversation state and context across tool calls
+    - Handle tool call failures and recursion gracefully
+
+    Architecture Flow:
+        User Question → Agent (GPT-4.1-nano) → Tool Selection → RAG/Search → Response
+        │
+        ├─ RAG Tools: ask_naive_llm_tool, ask_contextual_compression_llm_tool, etc.
+        └─ External Tools: StudentAid.gov search, Mohela search, general web search
+
+    Args:
+        additional_tools (list): RAG tools to bind to the agent, typically:
+            - ask_naive_llm_tool: Primary RAG tool (best RAGAS performance)
+            - ask_contextual_compression_llm_tool: Premium reranked retrieval
+            - ask_multi_query_llm_tool: Comprehensive multi-angle search
+            - ask_parent_document_llm_tool: Small-to-big retrieval strategy
+
+    Returns:
+        Compiled LangGraph agent ready for student loan question processing.
+        Agent supports recursive tool calls with 25-step limit for complex workflows.
+
+    LangGraph Configuration:
+        - Model: GPT-4.1-nano (temperature=0 for consistency)
+        - Timeout: 120s for complex multi-tool operations
+        - State: AgentState with message accumulation
+        - Nodes: 'agent' (LLM) → 'action' (ToolNode) → 'agent' (response)
+
+    Tool Belt Composition:
+        - Internal RAG: 4 specialized federal loan retrieval methods
+        - External APIs: 3 Tavily-powered search functions + general web search
+        - Total: ~7-8 tools depending on additional_tools provided
+
+    Example Usage:
+        >>> from src.agents.llm_tools_for_toolbelt import ask_naive_llm_tool
+        >>> agent = get_graph_agent([ask_naive_llm_tool])
+        >>> response = agent.invoke({"messages": [HumanMessage("What is FAFSA?")]})
+    """
     logger.info(
         f"🤖 Creating graph agent with {len(additional_tools)} additional tools"
     )
