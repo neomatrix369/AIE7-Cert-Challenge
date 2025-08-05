@@ -4,6 +4,7 @@ import pandas as pd
 from datetime import datetime
 from tqdm.notebook import tqdm
 from ragas.llms import LangchainLLMWrapper
+from langchain_openai import OpenAIEmbeddings
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage
 from ragas import EvaluationDataset
@@ -24,6 +25,8 @@ memory = Memory(location=cache_folder)
 
 from ragas.metrics import (
     LLMContextRecall,
+    ContextPrecision,
+    AnswerCorrectness,
     Faithfulness,
     FactualCorrectness,
     ResponseRelevancy,
@@ -36,6 +39,7 @@ from src.evaluation.tool_calls_parser_for_eval import (
     extract_contexts_for_eval,
     parse_langchain_messages,
 )
+from src.evaluation.metrics_config import METRICS_ORDER
 
 # ### Knowledge Graph Based Synthetic Generation
 #
@@ -69,7 +73,11 @@ def generate_golden_master(original_doc, items_to_pick: int = 20, final_size: in
 def generate_responses_for_golden_dataset(
     golden_master, graph_agent, pause_secs_between_each_run: int = 0
 ):
-    for test_row in tqdm(golden_master):
+    # Initialize metadata storage if it doesn't exist
+    if not hasattr(golden_master, '_custom_metadata'):
+        golden_master._custom_metadata = {}
+    
+    for idx, test_row in enumerate(tqdm(golden_master)):
         inputs = {"messages": [HumanMessage(content=test_row.eval_sample.user_input)]}
         response = graph_agent.invoke(inputs)
 
@@ -82,13 +90,37 @@ def generate_responses_for_golden_dataset(
             "tools_used": parsed_data.get("summary", {}).get("tools", []),
             "num_contexts": len(evaluation_contexts),
         }
+        
+        # Assign supported RAGAS fields
         test_row.eval_sample.response = eval_sample["response"]
         test_row.eval_sample.retrieved_contexts = eval_sample["retrieved_contexts"]
-        test_row.eval_sample.tools_used = eval_sample["tools_used"]
+        
+        # Store custom metadata separately using sample index as key
+        sample_id = f"sample_{idx}"
+        golden_master._custom_metadata[sample_id] = {
+            "tools_used": eval_sample["tools_used"],
+            "num_contexts": eval_sample["num_contexts"],
+            "user_input": eval_sample["user_input"]  # For matching
+        }
 
         if pause_secs_between_each_run > 0:
             time.sleep(pause_secs_between_each_run)
     return golden_master
+
+
+def display_dataset_with_metadata(golden_master):
+    """Display dataset as pandas DataFrame with custom metadata columns"""
+    df = golden_master.to_pandas()
+    if hasattr(golden_master, '_custom_metadata'):
+        tools_used = []
+        num_contexts = []
+        for idx in range(len(df)):
+            meta = golden_master._custom_metadata.get(f"sample_{idx}", {})
+            tools_used.append(meta.get("tools_used", []))
+            num_contexts.append(meta.get("num_contexts", 0))
+        df['tools_used'] = tools_used
+        df['num_contexts'] = num_contexts
+    return df
 
 
 def run_ragas_evaluation(
@@ -119,6 +151,8 @@ def run_ragas_evaluation(
             FactualCorrectness(),
             ResponseRelevancy(),
             ContextEntityRecall(),
+            ContextPrecision(),
+            AnswerCorrectness(),
             NoiseSensitivity(),
         ]
     else:
@@ -141,14 +175,7 @@ def run_ragas_evaluation(
 
 def record_metrics_from_run(retriever_name, dataframe):
     new_dataframe = dataframe.copy()
-    columns = [
-        "context_recall",
-        "faithfulness",
-        "factual_correctness",
-        "answer_relevancy",
-        "context_entity_recall",
-        "noise_sensitivity_relevant",
-    ]
+    columns = METRICS_ORDER
     metrics_filename = "../metrics/ragas-evaluation-metrics.csv"
     dataset_df = pd.DataFrame()
     if os.path.exists(metrics_filename):

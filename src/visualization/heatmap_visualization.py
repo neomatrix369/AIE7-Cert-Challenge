@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
 from collections import defaultdict
+from src.evaluation.metrics_config import METRICS_ORDER, METRICS_WEIGHTS
 
 
 def load_and_process_data(csv_path="../metrics/ragas-evaluation-metrics.csv"):
@@ -32,30 +33,16 @@ def load_and_process_data(csv_path="../metrics/ragas-evaluation-metrics.csv"):
                 "factual_correctness": float(row["factual_correctness"]),
                 "answer_relevancy": float(row["answer_relevancy"]),
                 "context_entity_recall": float(row["context_entity_recall"]),
+                "context_precision": float(row["context_precision"]),
+                "answer_correctness": float(row["answer_correctness"]),
                 "noise_sensitivity_relevant": float(row["noise_sensitivity_relevant"]),
             }
         )
 
     # Calculate averages and overall scores
     processed = {}
-    metrics = [
-        "context_recall",
-        "faithfulness",
-        "factual_correctness",
-        "answer_relevancy",
-        "context_entity_recall",
-        "noise_sensitivity_relevant",
-    ]
-
-    # Weights for overall score calculation
-    weights = {
-        "context_recall": 0.25,
-        "faithfulness": 0.25,
-        "factual_correctness": 0.20,
-        "answer_relevancy": 0.20,
-        "context_entity_recall": 0.05,
-        "noise_sensitivity_relevant": 0.05,
-    }
+    metrics = METRICS_ORDER
+    weights = METRICS_WEIGHTS
 
     for retriever, runs in retriever_data.items():
         avg_metrics = {}
@@ -235,12 +222,12 @@ def create_metric_importance_chart(sorted_data, metrics):
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
 
-    # Chart 1: Metric importance (weights)
-    weights = [0.25, 0.25, 0.20, 0.20, 0.05, 0.05]  # Corresponding to metrics order
+    # Chart 1: Metric importance (weights) - dynamically ordered
+    weight_values = [weights[metric] for metric in metrics]
     metric_names = [m.replace("_", " ").title() for m in metrics]
 
     colors = plt.cm.Set3(np.arange(len(metrics)))
-    bars = ax1.bar(metric_names, weights, color=colors)
+    bars = ax1.bar(metric_names, weight_values, color=colors)
     ax1.set_title(
         "📊 Metric Importance Weights\n(Used in Overall Scoring)", fontweight="bold"
     )
@@ -248,7 +235,7 @@ def create_metric_importance_chart(sorted_data, metrics):
     ax1.set_ylim(0, 0.3)
 
     # Add percentage labels
-    for bar, weight in zip(bars, weights):
+    for bar, weight in zip(bars, weight_values):
         ax1.text(
             bar.get_x() + bar.get_width() / 2.0,
             bar.get_height() + 0.01,

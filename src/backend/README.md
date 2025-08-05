@@ -2,6 +2,47 @@
 
 A streamlined FastAPI backend for the AIE7 Certification Challenge that provides a single `/ask` endpoint for federal student loan questions.
 
+## 📖 Table of Contents
+
+- [✅ Features](#features)
+- [🚀 Quick Start](#quick-start)
+  - [Option 1: Local Development](#option-1-local-development)
+    - [1. Environment Setup](#1-environment-setup)
+    - [2. Install Dependencies](#2-install-dependencies)
+    - [3. Run the API](#3-run-the-api)
+    - [4. Test the API](#4-test-the-api)
+  - [Option 2: Docker Deployment](#option-2-docker-deployment)
+    - [1. Environment Setup](#1-environment-setup-1)
+    - [2. Build and Run with Docker Compose (Recommended)](#2-build-and-run-with-docker-compose-recommended)
+    - [3. Manual Docker Build and Run](#3-manual-docker-build-and-run)
+    - [4. Test the Dockerized API](#4-test-the-dockerized-api)
+  - [Docker Management Commands](#docker-management-commands)
+  - [Network and Volume Management](#network-and-volume-management)
+- [🔗 API Usage](#api-usage)
+  - [Ask Endpoint](#ask-endpoint)
+  - [Enhanced Response Fields](#enhanced-response-fields)
+  - [Other Endpoints](#other-endpoints)
+- [❓ Example Questions](#example-questions)
+- [📚 Knowledge Base](#knowledge-base)
+  - [Federal Policy Documents (PDF)](#federal-policy-documents-pdf)
+  - [Real Customer Data (CSV)](#real-customer-data-csv)
+- [📊 Performance](#performance)
+- [🏗️ Architecture](#architecture)
+- [🛠️ Development](#development)
+  - [Project Structure](#project-structure)
+  - [Adding New Questions](#adding-new-questions)
+  - [Monitoring](#monitoring)
+- [🚀 Deployment](#deployment)
+  - [Docker Production Deployment](#docker-production-deployment)
+  - [Container Features](#container-features)
+  - [Multi-Container Setup (Backend + Frontend)](#multi-container-setup-backend--frontend)
+  - [Production Deployment Considerations](#production-deployment-considerations)
+- [🔧 Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Performance Optimization](#performance-optimization)
+  - [Log Analysis](#log-analysis)
+- [💬 Support](#support)
+
 ## Features
 
 ✅ **Single Purpose API** - One `/ask` endpoint for student loan questions  
@@ -103,6 +144,9 @@ docker-compose down -v
 > - Create a shared network (`student-loan-network`) for frontend communication
 > - Mount volumes for persistent cache and live development
 > - Include health checks and auto-restart policies
+
+**_NOTE: Please give the app a good 5 minutes or so to get started, as loading 2000+ docs inside the Docker container takes a bit of time. Till then we are not able to ping the backend server._**
+
 
 #### 3. Manual Docker Build and Run
 

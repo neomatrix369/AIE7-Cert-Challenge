@@ -74,25 +74,23 @@ The simplest chunking strategy has been used:
 ### taking advise from and also reviewing all the code and notebooks shared on RAG and works (legacy implementation)
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
 ```
-One of the analysis from an LLM suggested for the type of data/documents present in the `data` folder the below is the most optimised one to have:
+One of the analysis from an LLM suggested for the type of data/documents present in the `data` folder the below is the most optimised one to have for the child splitter:
 ```python
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+child_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
 ```
 
-While for Parent Docoment retrievers can be setup this way:
-```python
-# chunk_size: Large enough to provide robust context to the LLM, often capturing a complete, self-contained section of the handbook.
-# chunk_overlap: Overlap is less critical for parent chunks as they are not directly used for similarity search.
-parent_text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500 chunk_overlap=0)
+Although the above config didn't help but deteriorated the metrics (scores) for the Parent Docoment retriever.
 
-# chunk_size: Optimized for precise, accurate retrieval of specific facts and regulations.
-# chunk_overlap: Maintains continuity between small chunks without excessive redundancy.
-child_text_splitter = RecursiveCharacterTextSplitter(chunk_size=512 chunk_overlap=50)
+While the Parent Docoment retriever can be setup this way:
+```python
+parent_text_splitter = RecursiveCharacterTextSplitter(chunk_size=750 chunk_overlap=100) ### as other retrievers and same as child splitter
+
+child_text_splitter = RecursiveCharacterTextSplitter(chunk_size=750 chunk_overlap=100)
 ```
-We can try the above and (re)run experiments using our RAGAS evaluation pipeline to see if we get better scores.
 
 **✅ Deliverables**
 1. Describe all of your data sources and external APIs, and describe what you’ll use them for.
+
 2. Describe the default chunking strategy that you will use.  Why did you make this decision?
 
 ## Task 4: Building a Quick End-to-End Agentic RAG Prototype

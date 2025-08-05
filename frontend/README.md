@@ -2,6 +2,30 @@
 
 A simple HTML/CSS/JavaScript chat interface for the Federal Student Loan RAG backend API.
 
+## 📖 Table of Contents
+
+- [✨ Features](#features)
+- [📋 Prerequisites](#prerequisites)
+- [🚀 Quick Start](#quick-start)
+- [🔗 Backend Connection](#backend-connection)
+- [📁 Files Structure](#files-structure)
+- [💻 Usage](#usage)
+- [🐳 Docker Deployment](#docker-deployment)
+  - [Prerequisites for Docker](#prerequisites-for-docker)
+  - [Container Discovery](#container-discovery)
+  - [Option 1: Full-Stack with Enhanced Docker Script (Recommended)](#option-1-full-stack-with-enhanced-docker-script-recommended)
+  - [Option 2: Multi-Container Setup (Frontend discovers Backend)](#option-2-multi-container-setup-frontend-discovers-backend)
+  - [Option 3: Frontend Container Only](#option-3-frontend-container-only)
+  - [Option 4: Development with Live Reload](#option-4-development-with-live-reload)
+  - [Docker Management Commands](#docker-management-commands)
+  - [Environment Variables & Configuration](#environment-variables--configuration)
+  - [Network Architecture](#network-architecture)
+- [🛠 Development](#development)
+- [📄 Docker Files](#docker-files)
+- [🔧 Troubleshooting](#troubleshooting)
+  - [Common Issues](#common-issues)
+  - [Health Checks](#health-checks)
+
 ## Features
 
 - Clean chat interface for interacting with the RAG backend
