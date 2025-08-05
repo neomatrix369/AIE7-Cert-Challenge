@@ -49,7 +49,6 @@ cp .env-example .env
 
 ### 2. Start Backend with Docker (from the root folder of the project)
 ```bash
-
 cd src/backend
 docker-compose up --build
 # Backend running at: http://localhost:8000
@@ -59,6 +58,13 @@ docker-compose up --build
 
 See [Docker deployment at src/backend/README.md](./src/backend/README.md#deployment) for detailed Docker setup options
 
+To stop this docker container please do this:
+
+```bash
+cd src/backend
+docker-compose down
+```
+
 ### 3. Start the Frontend with Docker (new terminal, from the root folder of the project)
 ```bash
 cd frontend
@@ -66,7 +72,16 @@ cd frontend
 # Frontend running at: http://localhost:3000
 ```
 
+**_NOTE: Please give the app a good 5 minutes or so to get started, as loading 2000+ docs inside the Docker container takes a bit of time. Till then we are not able to ping the backend server._**
+
 See [Docker deployment at frontend/README.md](./frontend/README.md#docker-deployment) for detailed Docker setup options
+
+To stop this docker container please do this:
+
+```bash
+cd frontend
+docker-compose down
+```
 
 ### 4. Open & Use the Assistant
 Navigate to **http://localhost:3000** and start asking federal student loan questions!

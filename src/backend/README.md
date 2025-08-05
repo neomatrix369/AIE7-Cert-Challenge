@@ -145,6 +145,9 @@ docker-compose down -v
 > - Mount volumes for persistent cache and live development
 > - Include health checks and auto-restart policies
 
+**_NOTE: Please give the app a good 5 minutes or so to get started, as loading 2000+ docs inside the Docker container takes a bit of time. Till then we are not able to ping the backend server._**
+
+
 #### 3. Manual Docker Build and Run
 
 **IMPORTANT:** Build from project root, but .env must be in project root:

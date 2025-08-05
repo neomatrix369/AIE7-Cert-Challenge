@@ -82,7 +82,7 @@ Green/Higher scores = Better performance | Red/Lower scores = Needs improvement
 
 plt.figtext(
     0.125,
-    -0.45,
+    -0.55,
     explanations,
     fontsize=9,
     verticalalignment="bottom",
