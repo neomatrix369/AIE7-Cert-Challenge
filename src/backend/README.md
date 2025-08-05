@@ -332,17 +332,38 @@ The API uses a **hybrid dataset** containing:
 - The Direct Loan Program
 
 ### Real Customer Data (CSV)
-- 4,547 filtered customer complaints
+- 4,547 customer complaints (note: CSV complaints count further reduces down to 825 complaints and then to 480 after a cleaning/filtering process)
 - Real servicer issues (Nelnet, Aidvantage, Mohela, etc.)
 - Practical scenarios and solutions
+
+
+### Data Requirements
+The project includes a hybrid dataset:
+- **4 PDF documents** (~4MB) - Federal student loan policies
+- **CSV complaints file** (~12MB) - Real customer complaint data => 4,547 raw → 825 unfiltered -> 480 usable rows (10% retention after quality filtering)
+- **Vector embeddings** (~39MB in memory) - Generated from documents
+
+### Complaints Dataset Processing:
+- **Raw CSV**: 4,547 total records
+- **After loading Dataset**: 825 pre-quality checked complaints (18% retention)
+- **Quality Filters Applied**:
+  - ❌ Narratives < 100 characters
+  - ❌ Excessive redaction (>5 XXXX tokens)
+  - ❌ Empty/None/N/A content
+- **Final Dataset**: 480 filtered complaints (11% retention)
+- **Rationale**: Ensures meaningful content for
+RAG retrieval
+
+Note: the logs produced at runtime as well as the in the body of the [notebook](../../notebooks/Agentic%20RAG%20evaluation%20experiments.ipynb) make these statistics clear.
 
 ## Performance
 
 Based on RAGAS evaluation results:
-- **Context Recall:** 0.89 (excellent retrieval quality)
-- **Faithfulness:** 0.82 (high factual consistency)
-- **Answer Relevancy:** 0.62 (good relevance)
-- **Response Time:** ~3-8 seconds per question
+- **Faithfulness:** 0.90 (measures how factually accurate the generated answer is)
+- **Answer Relevancy:** 0.79 (evaluates how relevant the answer is to the question)
+- **Context Precision:** 0.69 (assesses the signal-to-noise ratio of the retrieved contexts)
+- **Context Recall:** 0.64 (measures the ability of the retriever to retrieve all relevant information)
+- **Answer Correctness:** 0.60 (evaluates the accuracy of the answer against the ground truth)
 
 ## Architecture
 

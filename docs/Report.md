@@ -34,7 +34,7 @@
 | Problem Component | Our Solution Approach | Technical Implementation |
 | :---- | ----- | ----- |
 | **Generic responses** | 8 specialized borrower roles with curated question sets | Frontend role selection + context injection |
-| **Manual system searches** | Intelligent retrieval with Naive RAG (best RAGAS performer) | Hybrid knowledge base: 4 PDFs + 4,547 complaint records |
+| **Manual system searches** | Intelligent retrieval with Naive RAG (best RAGAS performer) | 4 PDFs + 480 customer complaints (filtered from 4,547 raw records - excluded short narratives <100 chars, heavily redacted content >5 XXXX, and empty/invalid entries) |
 | **Incomplete information** | Multi-source orchestration with external tool integration | StudentAid.gov, MOHELA, and Tavily search APIs |
 | **Delayed responses** | Sub-3-second response times with performance metrics | GPT-4 family + optimized vector search with Qdrant |
 
@@ -120,7 +120,7 @@ All the files in the `data` folder are our dataset, shared during the cohort:
     - Pell Grant eligibility and award amounts
     - Need-based grant requirements
     - How Pell Grants interact with other financial aid
-- one complaints.csv file (4.5K records) -- contains complains from the customers of the Student Loan program
+- one complaints.csv file (4,547 raw → 825 unfiltered -> 480 usable rows after quality filtering) -- contains complaints from the customers of the Student Loan program
 - Additional APIs used to supplement context to the LLM:
   - StudentAid.gov API: Official federal guidance lookup
   - MOHELA API: Servicer-specific information

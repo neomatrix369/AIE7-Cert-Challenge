@@ -221,8 +221,19 @@ The backend requires 50+ Python packages including:
 ### Data Requirements
 The project includes a hybrid dataset:
 - **4 PDF documents** (~4MB) - Federal student loan policies
-- **CSV complaints file** (~12MB) - Real customer complaint data
+- **CSV complaints file** (~12MB) - Real customer complaint data => 4,547 raw → 825 unfiltered -> 480 usable rows (11% retention after quality filtering)
 - **Vector embeddings** (~39MB in memory) - Generated from documents
+
+### Complaints Dataset Processing:
+- **Raw CSV**: 4,547 total records
+- **After loading Dataset**: 825 unfiltered complaints (18% retention)
+- **Quality Filters Applied**:
+  - ❌ Narratives < 100 characters
+  - ❌ Excessive redaction (>5 XXXX tokens)
+  - ❌ Empty/None/N/A content
+- **Final Dataset**: 480 filtered complaints (11% retention)
+- **Rationale**: Ensures meaningful content for
+RAG retrieval
 
 ---
 
