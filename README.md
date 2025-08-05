@@ -7,7 +7,7 @@ An intelligent assistant that combines official federal loan policies with real 
 ---
 
 ### Written report can be found [here](./docs/Report.md)
-### Loom video can be found [here](https://loom)
+### Loom video can be found [here](https://www.loom.com/share/d89df95081c6407fbb705c03929e8f55?sid=c51a16f9-4cdb-4106-8cde-5aa344de4b63)
 
 ---
 
