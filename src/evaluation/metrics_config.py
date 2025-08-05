@@ -9,7 +9,7 @@ This ensures consistency across all evaluation and visualization modules.
 # Official metric order - DO NOT CHANGE without updating all dependent code
 METRICS_ORDER = [
     "context_recall",
-    "faithfulness", 
+    "faithfulness",
     "factual_correctness",
     "answer_relevancy",
     "context_entity_recall",
@@ -22,7 +22,7 @@ METRICS_ORDER = [
 # Weight Distribution Summary:
 #   - Primary RAG metrics: 0.85 (85% of total)
 #     * context_recall, faithfulness, factual_correctness, answer_relevancy
-#   - Secondary metrics: 0.10 (10% of total) 
+#   - Secondary metrics: 0.10 (10% of total)
 #     * context_entity_recall, noise_sensitivity_relevant
 #   - Supporting precision metrics: 0.05 (5% of total)
 #     * context_precision, answer_correctness
@@ -34,14 +34,20 @@ METRICS_WEIGHTS = {
     "factual_correctness": 0.18,
     "answer_relevancy": 0.17,
     # Secondary metrics (10%)
-    "context_entity_recall": 0.05,         
-    "noise_sensitivity_relevant": 0.05,    
+    "context_entity_recall": 0.05,
+    "noise_sensitivity_relevant": 0.05,
     # Supporting precision metrics (5%)
-    "context_precision": 0.02,             
-    "answer_correctness": 0.03,            
+    "context_precision": 0.02,
+    "answer_correctness": 0.03,
 }
 
 # Validation
-assert len(METRICS_ORDER) == len(METRICS_WEIGHTS), "Metrics order and weights must have same length"
-assert set(METRICS_ORDER) == set(METRICS_WEIGHTS.keys()), "Metrics order and weights must have same keys"
-assert abs(sum(METRICS_WEIGHTS.values()) - 1.0) < 0.001, f"Weights must sum to 1.0, got {sum(METRICS_WEIGHTS.values())}"
+assert len(METRICS_ORDER) == len(
+    METRICS_WEIGHTS
+), "Metrics order and weights must have same length"
+assert set(METRICS_ORDER) == set(
+    METRICS_WEIGHTS.keys()
+), "Metrics order and weights must have same keys"
+assert (
+    abs(sum(METRICS_WEIGHTS.values()) - 1.0) < 0.001
+), f"Weights must sum to 1.0, got {sum(METRICS_WEIGHTS.values())}"

@@ -77,11 +77,24 @@ def load_and_prepare_csv_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
     loader = CSVLoader(
         file_path=f"{folder}/complaints.csv",
         metadata_columns=[
-            "Date received", "Product", "Sub-product", "Issue", "Sub-issue",
-            "Consumer complaint narrative", "Company public response", "Company",
-            "State", "ZIP code", "Tags", "Consumer consent provided?",
-            "Submitted via", "Date sent to company", "Company response to consumer",
-            "Timely response?", "Consumer disputed?", "Complaint ID",
+            "Date received",
+            "Product",
+            "Sub-product",
+            "Issue",
+            "Sub-issue",
+            "Consumer complaint narrative",
+            "Company public response",
+            "Company",
+            "State",
+            "ZIP code",
+            "Tags",
+            "Consumer consent provided?",
+            "Submitted via",
+            "Date sent to company",
+            "Company response to consumer",
+            "Timely response?",
+            "Consumer disputed?",
+            "Complaint ID",
         ],
     )
 
@@ -96,18 +109,20 @@ def load_and_prepare_csv_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
     for doc in loan_complaint_data:
         doc.page_content = doc.metadata["Consumer complaint narrative"]
 
-    logger.info(f"📝 STEP 2 - Page content set: {len(loan_complaint_data):,} records (no change)")
+    logger.info(
+        f"📝 STEP 2 - Page content set: {len(loan_complaint_data):,} records (no change)"
+    )
     gc.collect()
 
     # STEP 3: Apply quality filters with detailed tracking
     logger.info(f"🔍 STEP 3 - Applying quality filters...")
 
     filter_stats = {
-        'too_short': 0,
-        'too_many_xxxx': 0,
-        'empty_or_na': 0,
-        'multiple_issues': 0,
-        'valid': 0
+        "too_short": 0,
+        "too_many_xxxx": 0,
+        "empty_or_na": 0,
+        "multiple_issues": 0,
+        "valid": 0,
     }
 
     filtered_docs = []
@@ -118,25 +133,27 @@ def load_and_prepare_csv_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
 
         # Check each filter condition
         if len(narrative.strip()) < 100:
-            filter_stats['too_short'] += 1
-            issues.append('length')
+            filter_stats["too_short"] += 1
+            issues.append("length")
 
         if narrative.count("XXXX") > 5:
-            filter_stats['too_many_xxxx'] += 1
-            issues.append('redaction')
+            filter_stats["too_many_xxxx"] += 1
+            issues.append("redaction")
 
         if narrative.strip() in ["", "None", "N/A"]:
-            filter_stats['empty_or_na'] += 1
-            issues.append('empty')
+            filter_stats["empty_or_na"] += 1
+            issues.append("empty")
 
         # Track records with multiple issues
         if len(issues) > 1:
-            filter_stats['multiple_issues'] += 1
+            filter_stats["multiple_issues"] += 1
 
         # Keep valid records
         if not issues:
-            filter_stats['valid'] += 1
-            doc.page_content = f"Customer Issue: {doc.metadata.get('Issue', 'Unknown')}\n"
+            filter_stats["valid"] += 1
+            doc.page_content = (
+                f"Customer Issue: {doc.metadata.get('Issue', 'Unknown')}\n"
+            )
             doc.page_content += f"Product: {doc.metadata.get('Product', 'Unknown')}\n"
             doc.page_content += f"Complaint Details: {narrative}"
             filtered_docs.append(doc)
@@ -165,7 +182,9 @@ def split_documents(documents):
         f"📄 Splitting {len(documents)} documents into chunks (size=750, overlap=100)"
     )
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
-    logger.info(f"text_splitter: Chunk Size: {text_splitter._chunk_size} | Chunk Overlap: {text_splitter._chunk_overlap}")
+    logger.info(
+        f"text_splitter: Chunk Size: {text_splitter._chunk_size} | Chunk Overlap: {text_splitter._chunk_overlap}"
+    )
     split_docs = text_splitter.split_documents(documents)
     logger.info(f"✅ Created {len(split_docs)} document chunks")
     return split_docs
