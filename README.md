@@ -132,8 +132,7 @@ This project implements cutting-edge RAG techniques:
 
 ### Component Documentation
 - **Backend Details**: [`src/backend/README.md`](src/backend/README.md)
-- **Frontend Setup**: [`frontend/README.md`](frontend/README.md)  
-- **Development Guide**: [`CLAUDE.md`](CLAUDE.md)
+- **Frontend Setup**: [`frontend/README.md`](frontend/README.md)
 
 ### Docker Deployment
 ```bash

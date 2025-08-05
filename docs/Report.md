@@ -66,7 +66,7 @@ Technology Stack Choices
 - Orchestration: LangGraph - Enables complex multi-agent workflows for our agentic RAG to run our tools, eventhough we have used only simple graphs
 - Vector Database: Qdrant - as we have been using during our sessions and satisfies the basic requirements of storing chunks and searching documents, also code to use it integrated with the retrievers were already avail to use
 - Monitoring: LangSmith - Built-in tracing for agent workflows, essential for debugging tool calls and measuring response quality in customer service context, in case we learn monitoring using LangSmith
-- User Interface: Streamlit or Cursor/Claude Code generate front-end + Docker - rapid prototyping for agent-facing dashboard with real-time chat
+- User Interface: Streamlit or Cursor/Claude Code generate front-end (NextJS) + Docker - rapid prototyping for agent-facing dashboard with real-time chat
 - Evaluation: RAGAS - Industry standard for RAG evaluation with metrics that align with accuracy and relevance requirements for Student Loan responses
 
 3. Where will you use an agent or agents?  What will you use “agentic reasoning” for in your app?
