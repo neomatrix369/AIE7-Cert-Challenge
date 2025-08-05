@@ -8,19 +8,13 @@ Bare minimum code to load CSV and display heatmap.
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+from src.evaluation.metrics_config import METRICS_ORDER
 
 # Load CSV file
 df = pd.read_csv("../metrics/ragas-evaluation-metrics.csv")
 
 # Get metrics columns
-metrics = [
-    "context_recall",
-    "faithfulness",
-    "factual_correctness",
-    "answer_relevancy",
-    "context_entity_recall",
-    "noise_sensitivity_relevant",
-]
+metrics = METRICS_ORDER
 
 # Calculate averages by retriever
 data = df.groupby("retriever")[metrics].mean()
@@ -76,6 +70,10 @@ explanations = """
   • (measures how relevant the answer is to the question)
 • Context Entity Recall (context_entity_recall): How well important names/places/things are preserved
   • (measures how well entities are retrieved in context)
+• Context Precision (context_precision): How well the most relevant chunks are ranked higher in retrieval results
+  • (measures the signal-to-noise ratio of retrieved context and ranking quality)
+• Answer Correctness (answer_correctness): How well the answer matches the ground truth in both factual content and semantic meaning
+  • (combines factual similarity and semantic similarity using weighted evaluation)
 • Noise Sensitivity (noise_sensitivity_relevant): How well the system ignores irrelevant or confusing information
   • (measures robustness to irrelevant information)
 
@@ -84,7 +82,7 @@ Green/Higher scores = Better performance | Red/Lower scores = Needs improvement
 
 plt.figtext(
     0.125,
-    -0.45,
+    -0.55,
     explanations,
     fontsize=9,
     verticalalignment="bottom",

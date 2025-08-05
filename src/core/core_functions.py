@@ -136,6 +136,7 @@ def split_documents(documents):
         f"📄 Splitting {len(documents)} documents into chunks (size=750, overlap=100)"
     )
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
+    logger.info(f"text_splitter: Chunk Size: {text_splitter._chunk_size} | Chunk Overlap: {text_splitter._chunk_overlap}")
     split_docs = text_splitter.split_documents(documents)
     logger.info(f"✅ Created {len(split_docs)} document chunks")
     return split_docs

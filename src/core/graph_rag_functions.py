@@ -58,6 +58,7 @@ def get_vectorstore_after_loading_students_loan_data_into_qdrant():
     logger.info(f"✅ Finished loading student loan hybrid dataset")
 
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
+    logger.info(f"text_splitter: Chunk Size: {text_splitter._chunk_size} | Chunk Overlap: {text_splitter._chunk_overlap}")
     split_documents = text_splitter.split_documents(student_loan_docs_dataset)
     logger.info(
         f"📄 Split hybrid dataset into {len(split_documents)} chunks (size=750, overlap=100)"
@@ -243,7 +244,10 @@ from langchain.retrievers import ParentDocumentRetriever
 from langchain.storage import InMemoryStore
 
 parent_docs = student_loan_docs_dataset.copy()
-child_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+# child_splitter = RecursiveCharacterTextSplitter(chunk_size=512, chunk_overlap=50)
+### Same as parent splitting
+child_splitter = RecursiveCharacterTextSplitter(chunk_size=750, chunk_overlap=100)
+logger.info(f"child_splitter: Chunk Size: {child_splitter._chunk_size} | Chunk Overlap: {child_splitter._chunk_overlap}")
 
 vector_store.client.create_collection(
     collection_name="full_documents",

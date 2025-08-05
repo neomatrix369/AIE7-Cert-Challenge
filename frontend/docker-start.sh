@@ -30,6 +30,7 @@ if [ ! -f "../.env" ]; then
     echo "   - OPENAI_API_KEY"
     echo "   - TAVILY_API_KEY"
     echo "   - COHERE_API_KEY"
+    echo "   - LANGCHAIN_API_KEY"
     echo ""
 fi
 
