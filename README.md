@@ -1,8 +1,15 @@
 # Federal Student Loan AI Assistant
 
-**AIE7 Certification Challenge** - Advanced RAG system for federal student loan customer service
+**AIE7 Certification Challenge** - Standard RAG system for federal student loan customer service
 
 An intelligent assistant that combines official federal loan policies with real customer experiences to provide comprehensive guidance on student loan questions, repayment options, forgiveness programs, and servicer issues.
+
+---
+
+### Written report can be found [here](./docs/Report.md)
+### Loom video can be found [here](https://loom)
+
+---
 
 ## 📖 Table of Contents
 
