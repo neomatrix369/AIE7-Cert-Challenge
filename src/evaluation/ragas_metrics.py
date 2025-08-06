@@ -1,5 +1,79 @@
 def extract_ragas_metrics(ragas_result, model_name: str = ""):
-    """Extract cost, latency, and token metrics from RAGAS evaluation result"""
+    """
+    Extract comprehensive metrics from RAGAS evaluation results with cost analysis.
+    
+    **🎯 PURPOSE & STRATEGY:**
+    - Processes RAGAS evaluation results into standardized metrics format
+    - Calculates token usage and cost analysis across all evaluation runs
+    - Provides comprehensive performance and efficiency metrics
+    - Essential for cost-performance trade-off analysis across retrieval methods
+    
+    **⚡ PERFORMANCE METRICS EXTRACTED:**
+    - **RAGAS Scores**: All 8 standard RAGAS quality metrics (0-1 scale)
+    - **Token Usage**: Input/output tokens with per-run averages
+    - **Cost Analysis**: Total and per-run costs using current API pricing
+    - **Execution Stats**: Run counts and aggregated statistics
+    
+    **🔧 TECHNICAL IMPLEMENTATION:**
+    - **Safe Extraction**: Handles various RAGAS result formats gracefully
+    - **NaN Filtering**: Removes invalid scores for accurate averages
+    - **Cost Modeling**: Uses current API pricing for 15+ model types
+    - **Fallback Defaults**: Graceful handling of missing data fields
+    
+    **💰 SUPPORTED MODELS & PRICING:**
+    - **GPT Family**: gpt-4.1, gpt-4.1-nano, gpt-4.1-mini, gpt-4o-mini, gpt-4o
+    - **Claude Family**: claude-3-haiku, claude-3-sonnet, claude-3-opus
+    - **Embeddings**: text-embedding-3-small, text-embedding-3-large
+    - **Reranking**: rerank-v3.5 (Cohere)
+    - **Fallback**: gpt-4o-mini pricing for unknown models
+    
+    **📊 OUTPUT METRICS:**
+    ```python
+    {
+        # Execution Statistics
+        "Total_Runs": 10,
+        "Total_Cost": 0.0234,
+        "Avg_Cost_Per_Run": 0.00234,
+        
+        # Token Usage
+        "Total_Input_Tokens": 15420,
+        "Total_Output_Tokens": 3280,
+        "Avg_Input_Tokens_Per_Run": 1542.0,
+        "Avg_Output_Tokens_Per_Run": 328.0,
+        
+        # RAGAS Quality Metrics (all 0-1 scale, higher=better)
+        "context_recall": 0.637,
+        "faithfulness": 0.905,
+        "factual_correctness": 0.823,
+        # ... all other RAGAS metrics
+    }
+    ```
+    
+    Args:
+        ragas_result: RAGAS evaluation result object with scores, costs, and usage data
+        model_name (str): Model identifier for cost calculation (e.g., "gpt-4.1-mini")
+    
+    Returns:
+        dict: Comprehensive metrics including RAGAS scores, tokens, costs, and statistics
+    
+    **💡 COST CALCULATION METHODOLOGY:**
+    - Uses per-million-token pricing from official API documentation
+    - Separates input and output token costs (different rates)
+    - Provides both total and per-run cost breakdowns
+    - Essential for ROI analysis and method selection
+    
+    **⚠️ IMPORTANT NOTES:**
+    - Costs based on current API pricing (update get_model_costs for changes)
+    - Token usage extracted from RAGAS cost callback when available
+    - NaN scores filtered out to prevent skewed averages
+    - Latency metrics set to 0 (not available in standard RAGAS results)
+    
+    Example:
+        >>> result = run_ragas_evaluation(dataset, "naive_retrieval", "gpt-4.1-mini")
+        >>> metrics = extract_ragas_metrics(result, "gpt-4.1-mini")
+        >>> print(f"Cost per run: ${metrics['Avg_Cost_Per_Run']:.4f}")
+        >>> print(f"Context recall: {metrics['context_recall']:.3f}")
+    """
     import numpy as np
 
     def get_value(obj, key):
