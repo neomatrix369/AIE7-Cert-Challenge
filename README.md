@@ -93,6 +93,23 @@ docker-compose down
 ### 4. Open & Use the Assistant
 Navigate to **http://localhost:3000** and start asking federal student loan questions!
 
+### 5. Running the Notebook
+
+Ensure all the project dependencies have been executed, using the below command:
+
+```bash
+### run from the project root
+uv sync
+```
+
+From the project root directory, run the below:
+
+```bash
+jupyter-lab .
+```
+
+When inside Jupyter Labs, navigate to the notebooks folder, to find the [Agentic RAG evaluation experiments.ipynb](./notebooks/Agentic%20RAG%20evaluation%20experiments.ipynb) notebook.
+
 ## ✨ Core Features
 
 - **🎯 Federal Student Loan Expert** - Trained on official policies + real customer complaints
