@@ -108,6 +108,8 @@ From the project root directory, run the below:
 jupyter-lab .
 ```
 
+When inside Jupyter Labs, navigate to the notebooks folder, to find the [Agentic RAG evaluation experiments.ipynb](./notebooks/Agentic%20RAG%20evaluation%20experiments.ipynb) notebook.
+
 ## ✨ Core Features
 
 - **🎯 Federal Student Loan Expert** - Trained on official policies + real customer complaints
