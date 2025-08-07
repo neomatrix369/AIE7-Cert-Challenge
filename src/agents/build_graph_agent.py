@@ -129,7 +129,14 @@ def get_graph_agent(additional_tools: list):
     uncompiled_graph.add_node("action", tool_node)
 
     uncompiled_graph.set_entry_point("agent")
-    uncompiled_graph.add_conditional_edges("agent", should_continue)
+    uncompiled_graph.add_conditional_edges(
+        "agent", 
+        should_continue,
+        {
+            "action": "action",
+            END: END
+        }
+    )
 
     uncompiled_graph.add_edge("action", "agent")
 
