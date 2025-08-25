@@ -45,6 +45,10 @@ echo "Press Ctrl+C to stop all services"
 echo ""
 
 # Start the services
-docker-compose up --build
+echo "Attempting to start services with 'docker-compose up --build'..."
+if ! docker-compose up --build; then
+    echo "First command failed, trying fallback command 'docker compose up --build'..."
+    docker compose up --build
+fi
 
 cleanup
