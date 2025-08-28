@@ -112,11 +112,23 @@ Or manually:
 # Build and start both services
 docker-compose up --build
 
+### or for macOS
+
+docker compose up --build
+
 # Run in background (detached mode)
 docker-compose up -d --build
 
+### or for macOS
+
+docker compose up -d --build
+
 # Stop all services
 docker-compose down
+
+### or for macOS
+
+docker compose down
 ```
 
 This will start:
@@ -130,12 +142,20 @@ This will start:
 ```bash
 cd ../src/backend
 docker-compose up -d  # Creates the shared network
+
+### or for macOS
+
+docker compose up -d
 ```
 
 **Step 2: Start Frontend (connects to backend container)**
 ```bash
 cd frontend
 docker-compose up --build
+
+### or for macOS
+
+docker compose up --build
 ```
 
 The frontend will automatically discover and connect to the `rag-api` container via Docker networking.
@@ -169,6 +189,10 @@ docker run -p 3000:3000 -v $(pwd):/app/frontend student-loan-frontend
 
 # Or with docker-compose for development
 docker-compose up --build  # Automatically includes volume mounts
+
+### or for macOS
+
+docker compose up --build
 ```
 
 The docker-compose setup includes volume mounting by default, so any changes to frontend files will be reflected immediately without rebuilding the container.
@@ -185,6 +209,10 @@ docker ps -a
 # View logs (real-time)
 docker logs -f frontend
 docker-compose logs -f frontend
+
+## OR
+# for macOS
+docker compose logs -f frontend
 
 # View logs (last 100 lines)
 docker logs --tail 100 frontend

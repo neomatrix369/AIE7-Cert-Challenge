@@ -139,6 +139,33 @@ docker-compose down
 docker-compose down -v
 ```
 
+OR
+
+```bash
+# for macOS
+
+# Navigate to the backend directory
+cd src/backend/
+
+# Build and run with Docker Compose
+docker compose up --build
+
+# Or run in background (detached mode)
+docker compose up --build -d
+
+# View logs (real-time)
+docker compose logs -f
+
+# View logs (last 100 lines)
+docker compose logs --tail 100
+
+# Stop the container
+docker compose down
+
+# Stop and remove volumes (complete cleanup)
+docker compose down -v
+```
+
 > **Note:** The docker-compose.yml is configured to:
 > - Build from the project root (`../../`) to access all `src/` dependencies
 > - Mount volumes for persistent cache and live development
@@ -416,6 +443,10 @@ The API is containerized and ready for production deployment:
 ```bash
 cd src/backend/
 docker-compose up --build -d
+
+## OR
+
+docker compose up --build -d
 ```
 
 **Option B: Manual Docker (from project root):**
@@ -447,9 +478,17 @@ The backend creates a shared Docker network that the frontend can connect to:
 cd src/backend/
 docker-compose up -d
 
+## OR
+
+docker compose up -d
+
 # Start frontend (connects to backend network)
 cd ../../frontend/
 docker-compose up --build
+
+## OR
+
+docker compose up --build
 ```
 
 **Network Architecture:**
@@ -591,6 +630,10 @@ docker volume inspect backend_cache_volume
 # Clear cache if needed (will regenerate)
 docker volume rm backend_cache_volume
 docker-compose down && docker-compose up --build
+
+## OR
+
+docker compose down && docker compose up --build
 
 # Monitor cache usage
 docker exec -it backend_rag-api_1 du -sh /app/cache/
