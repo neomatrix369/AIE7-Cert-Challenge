@@ -58,6 +58,10 @@ cp .env-example .env
 ```bash
 cd src/backend
 docker-compose up --build
+
+### or for macOS
+
+docker compose up --build
 # Backend running at: http://localhost:8000
 
 # docker ps ### to find out the container running the backend
@@ -70,6 +74,10 @@ To stop this docker container please do this:
 ```bash
 cd src/backend
 docker-compose down
+
+### or for macOS
+
+docker compose down
 ```
 
 **_NOTE: Please give the app a good 'few' minutes or so to get started, as loading 2000+ docs inside the Docker container takes a bit of time. Till then we are not able to ping the backend server._**
@@ -88,6 +96,10 @@ To stop this docker container please do this:
 ```bash
 cd frontend
 docker-compose down
+
+### or for macOS
+
+docker compose down
 ```
 
 ### 4. Open & Use the Assistant
@@ -164,6 +176,15 @@ This project implements cutting-edge RAG techniques:
 cd src/backend && docker-compose up --build
 cd frontend && docker-compose up --build
 ```
+
+OR
+
+```bash
+# Full-stack deployment (for macOS)
+cd src/backend && docker compose up --build
+cd frontend && docker compose up --build
+```
+
 
 ## 📋 Requirements
 
