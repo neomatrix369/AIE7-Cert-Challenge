@@ -73,6 +73,11 @@ mkdir -p cache golden-masters metrics
 echo -e "${BLUE}🛑 Stopping any existing containers...${NC}"
 $DOCKER_COMPOSE_COMMAND down --remove-orphans > /dev/null 2>&1 || true
 
+# Clean up dangling images and build cache to free disk space
+echo -e "${BLUE}🧹 Cleaning up dangling images and build cache...${NC}"
+docker image prune -f > /dev/null 2>&1 || true
+docker builder prune -f > /dev/null 2>&1 || true
+
 # Pull only external images (like Qdrant), skip custom built images
 echo -e "${BLUE}📥 Pulling external images...${NC}"
 $DOCKER_COMPOSE_COMMAND pull qdrant || echo -e "${YELLOW}⚠️  Qdrant pull failed, will use cached or build${NC}"
