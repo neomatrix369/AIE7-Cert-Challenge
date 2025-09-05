@@ -2,6 +2,15 @@
 
 A streamlined FastAPI backend for the AIE7 Certification Challenge that provides a single `/ask` endpoint for federal student loan questions.
 
+> **🚀 Quick Start**: For the easiest setup, use the **unified Docker orchestration** from the project root:
+> ```bash
+> # From project root directory
+> ./start-services.sh
+> ```
+> This starts the complete stack (Qdrant + Backend + Jupyter + Frontend) automatically.
+> 
+> Continue reading for component-specific setup and development options.
+
 ## 📖 Table of Contents
 
 - [✅ Features](#features)
@@ -99,6 +108,15 @@ python test_simple_api.py
 ```
 
 ### Option 2: Docker Deployment
+
+> **⚠️ IMPORTANT**: The recommended Docker setup is now the **unified orchestration** from the project root:
+> ```bash
+> # From project root directory - starts complete stack
+> ./start-services.sh
+> ```
+> This automatically starts Qdrant + Backend + Jupyter + Frontend together.
+> 
+> **The instructions below are for backend-only Docker deployment (legacy approach).**
 
 #### 1. Environment Setup
 

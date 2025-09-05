@@ -1,3 +1,5 @@
+# ⚠️  LEGACY: Use root-level docker-compose.yml and ./start-services.sh instead
+# This file is kept for backward compatibility only
 version: '3.8'
 
 services:

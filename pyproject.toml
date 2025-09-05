@@ -5,6 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "python-dotenv>=1.0.0",
     "langgraph>=0.2.69",
     "langchain-community>=0.3.16",
     "langchain-openai>=0.3.7",
