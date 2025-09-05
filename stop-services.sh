@@ -26,10 +26,19 @@ fi
 echo -e "${YELLOW}⏳ Stopping services gracefully...${NC}"
 $DOCKER_COMPOSE_COMMAND stop
 
+# Default cleanup - just remove dangling images (safe operation)
+if [ "$1" != "--remove" ] && [ "$1" != "--clean" ]; then
+    echo -e "${BLUE}🧹 Cleaning up dangling images and build cache...${NC}"
+    docker image prune -f > /dev/null 2>&1 || true
+    docker builder prune -f > /dev/null 2>&1 || true
+fi
+
 # Remove containers (keeping volumes for data persistence)
 if [ "$1" == "--remove" ]; then
     echo -e "${YELLOW}🗑️  Removing containers...${NC}"
     $DOCKER_COMPOSE_COMMAND down --remove-orphans
+    echo -e "${BLUE}🧹 Cleaning up dangling images...${NC}"
+    docker image prune -f > /dev/null 2>&1 || true
 fi
 
 # Remove volumes and data (destructive operation)
@@ -39,8 +48,9 @@ if [ "$1" == "--clean" ]; then
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
         $DOCKER_COMPOSE_COMMAND down --remove-orphans --volumes
-        echo -e "${YELLOW}🧹 Cleaning up unused Docker resources...${NC}"
-        docker system prune -f
+        echo -e "${YELLOW}🧹 Cleaning up all unused Docker resources...${NC}"
+        docker system prune -af  # -a removes all unused images, not just dangling ones
+        docker builder prune -af # Clean build cache completely
     else
         echo -e "${BLUE}Cancelled. Services stopped but data preserved.${NC}"
     fi
