@@ -41,86 +41,93 @@ An intelligent assistant that combines official federal loan policies with real 
 
 ## 🚀 Quick Start
 
-Get the AI assistant running in 4 simple steps:
+Get the entire RAG system running in 2 simple steps:
 
 ### 1. Environment Setup
 ```bash
 # Copy environment template and add your API keys
 cp .env-example .env
-# Edit .env file with your API keys:
-# OPENAI_API_KEY=your_key_here
-# COHERE_API_KEY=your_key_here  
-# TAVILY_API_KEY=your_key_here
-# LANGCHAIN_API_KEY=your_key_here
+
+# Edit .env file with your required API keys:
+# OPENAI_API_KEY=your_key_here (Required)
+# COHERE_API_KEY=your_key_here (Required)  
+# TAVILY_API_KEY=your_key_here (Required)
+# LANGCHAIN_API_KEY=your_key_here (Optional - for tracing)
 ```
 
-### 2. Start Backend with Docker (from the root folder of the project)
+### 2. Start All Services with Docker
 ```bash
-cd src/backend
-docker-compose up --build
+# Option 1: Automated setup (Recommended)
+./start-services.sh
 
-### or for macOS
+# Option 2: Manual Docker Compose
+docker-compose up --build -d
 
-docker compose up --build
-# Backend running at: http://localhost:8000
-
-# docker ps ### to find out the container running the backend
+# Option 3: Alternative setup for macOS
+docker compose up --build -d
 ```
 
-See [Docker deployment at src/backend/README.md](./src/backend/README.md#deployment) for detailed Docker setup options
+**🎉 That's it!** All services will start automatically:
+- **📊 Qdrant** (Vector Database): http://localhost:6333/dashboard
+- **🤖 Backend API**: http://localhost:8000 
+- **📚 Jupyter Notebooks**: http://localhost:8888
+- **📖 API Documentation**: http://localhost:8000/docs
+- **🎨 Frontend Dashboard**: http://localhost:3000 (optional)
 
-To stop this docker container please do this:
-
+### ⏹️ Stop All Services
 ```bash
-cd src/backend
+# Option 1: Using the stop script
+./stop-services.sh
+
+# Option 2: Direct Docker Compose
 docker-compose down
 
-### or for macOS
-
-docker compose down
+# Option 3: Clean shutdown (removes containers)
+./stop-services.sh --clean
 ```
 
-**_NOTE: Please give the app a good 'few' minutes or so to get started, as loading 2000+ docs inside the Docker container takes a bit of time. Till then we are not able to ping the backend server._**
+**_NOTE: The system loads a hybrid dataset (PDF policies + customer complaints) which may take 1-2 minutes to initialize. Check the Qdrant dashboard to monitor vector ingestion progress._**
 
-### 3. Start the Frontend with Docker (new terminal, from the root folder of the project)
+### 🔧 Service Management
 ```bash
-cd frontend
-./docker-start.sh
-# Frontend running at: http://localhost:3000
+# View logs for all services
+docker-compose logs -f
+
+# View logs for specific service
+docker-compose logs -f backend
+docker-compose logs -f jupyter
+
+# Restart specific service  
+docker-compose restart backend
 ```
 
-See [Docker deployment at frontend/README.md](./frontend/README.md#docker-deployment) for detailed Docker setup options
+### 3. Open & Use the System
+Once all services are running, you can access:
 
-To stop this docker container please do this:
+- **🎨 Frontend Dashboard**: http://localhost:3000 - Interactive chat interface
+- **📚 Jupyter Notebooks**: http://localhost:8888 - RAG experiments and analysis
+- **📖 API Documentation**: http://localhost:8000/docs - REST API endpoints
+- **📊 Qdrant Dashboard**: http://localhost:6333/dashboard - Vector database monitoring
 
+### 4. Running RAG Experiments
+
+#### Option 1: Using Docker (Recommended)
 ```bash
-cd frontend
-docker-compose down
-
-### or for macOS
-
-docker compose down
+# Jupyter is already running at http://localhost:8888
+# Open the notebooks directly in your browser
 ```
 
-### 4. Open & Use the Assistant
-Navigate to **http://localhost:3000** and start asking federal student loan questions!
-
-### 5. Running the Notebook
-
-Ensure all the project dependencies have been executed, using the below command:
-
+#### Option 2: Local Development
 ```bash
-### run from the project root
+# Install dependencies locally
 uv sync
+
+# Start Jupyter from project root
+uv run jupyter lab
 ```
 
-From the project root directory, run the below:
-
-```bash
-jupyter-lab .
-```
-
-When inside Jupyter Labs, navigate to the notebooks folder, to find the [Agentic RAG evaluation experiments.ipynb](./notebooks/Agentic%20RAG%20evaluation%20experiments.ipynb) notebook.
+When inside Jupyter Labs, you can access the main evaluation notebook:
+- [Agentic RAG evaluation experiments.ipynb](./notebooks/Agentic%20RAG%20evaluation%20experiments.ipynb)
 
 ## ✨ Core Features
 

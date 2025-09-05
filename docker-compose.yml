@@ -1,0 +1,147 @@
+name: ${COMPOSE_PROJECT_NAME:-student-loan-rag}
+
+services:
+  # Vector Database - Foundation Layer
+  qdrant:
+    image: ${QDRANT_IMAGE:-qdrant/qdrant:latest}
+    container_name: ${QDRANT_CONTAINER_NAME:-student-loan-qdrant}
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC API (optional)
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__LOG_LEVEL=INFO
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/localhost/6333' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - student-loan-network
+
+  # Backend API - RAG + Evaluation Layer
+  backend:
+    build:
+      context: .
+      dockerfile: src/backend/Dockerfile
+      target: backend
+    image: ${BACKEND_IMAGE_NAME:-student-loan-backend}
+    container_name: ${BACKEND_CONTAINER_NAME:-student-loan-backend}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./src:/app/src  # Mount source code for development
+      - ./data:/app/data:ro  # Mount data directory as read-only
+      - ./cache:/app/cache  # Mount cache directory
+      - ./notebooks:/app/notebooks  # Mount Jupyter notebooks
+      - ./golden-masters:/app/golden-masters  # Mount golden datasets
+      - ./metrics:/app/metrics  # Mount evaluation metrics
+      - backend_cache:/app/.cache  # Persistent Python cache
+    environment:
+      - QDRANT_URL=http://qdrant:6333  # Internal Docker network
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - COHERE_API_KEY=${COHERE_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-false}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-student-loan-rag}
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - BACKEND_HOST=0.0.0.0
+      - BACKEND_PORT=8000
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - student-loan-network
+
+  # Jupyter Notebook Server - Development & Analysis Layer
+  jupyter:
+    build:
+      context: .
+      dockerfile: src/backend/Dockerfile
+      target: jupyter
+    image: ${JUPYTER_IMAGE_NAME:-student-loan-jupyter}
+    container_name: ${JUPYTER_CONTAINER_NAME:-student-loan-jupyter}
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data:ro
+      - ./cache:/app/cache
+      - ./notebooks:/app/notebooks
+      - ./golden-masters:/app/golden-masters
+      - ./metrics:/app/metrics
+      - jupyter_data:/app/.jupyter
+      - backend_cache:/app/.cache
+    environment:
+      - QDRANT_URL=http://qdrant:6333
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - COHERE_API_KEY=${COHERE_API_KEY}
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-false}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-student-loan-rag}
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-}
+    depends_on:
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+    command: ["uv", "run", "jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=''", "--NotebookApp.password=''"]
+    networks:
+      - student-loan-network
+
+  # Frontend - Dashboard Layer (Optional for Demo/Analysis)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: ${FRONTEND_IMAGE_NAME:-student-loan-frontend}
+    container_name: ${FRONTEND_CONTAINER_NAME:-student-loan-frontend}
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000  # External access for browser
+      - NEXT_PUBLIC_DEPLOYMENT_ENV=docker
+      - NODE_ENV=production
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    networks:
+      - student-loan-network
+
+volumes:
+  qdrant_storage:
+    driver: local
+  backend_cache:
+    driver: local
+  jupyter_data:
+    driver: local
+
+networks:
+  student-loan-network:
+    driver: bridge
+    name: student-loan-network

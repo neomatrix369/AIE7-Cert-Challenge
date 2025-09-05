@@ -80,6 +80,15 @@ The frontend connects to the backend API at `http://localhost:8000/ask`. The int
 
 ## Docker Deployment
 
+> **⚠️ IMPORTANT**: The recommended Docker setup is now the **unified orchestration** from the project root:
+> ```bash
+> # From project root directory - starts complete stack
+> ./start-services.sh
+> ```
+> This automatically starts Qdrant + Backend + Jupyter + Frontend together.
+> 
+> **The instructions below are for frontend-only Docker deployment (legacy approach).**
+
 ### Prerequisites for Docker
 
 - Docker installed and running

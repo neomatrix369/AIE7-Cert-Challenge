@@ -28,10 +28,10 @@ from src.utils.logging_config import setup_logging
 
 logger = setup_logging(__name__)
 
-load_dotenv(dotenv_path="../../.env")
+load_dotenv(dotenv_path=".env")
 
 DATA_FOLDER = os.getenv("DATA_FOLDER")
-DEFAULT_FOLDER_LOCATION = "../data/"
+DEFAULT_FOLDER_LOCATION = "./data/"
 
 
 def check_if_env_var_is_set(env_var_name: str, human_readable_string: str = "API Key"):
@@ -125,7 +125,7 @@ def load_and_prepare_pdf_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
     if DATA_FOLDER:
         folder = DATA_FOLDER
     if not os.path.exists(folder):
-        folder = "../" + DEFAULT_FOLDER_LOCATION
+        folder = DEFAULT_FOLDER_LOCATION
     logger.info(f"📄 Loading student loan PDFs from: {folder}")
     loader = DirectoryLoader(folder, glob="*.pdf", loader_cls=PyMuPDFLoader)
     docs = loader.load()
@@ -237,7 +237,7 @@ def load_and_prepare_csv_loan_docs(folder: str = DEFAULT_FOLDER_LOCATION):
     if DATA_FOLDER:
         folder = DATA_FOLDER
     if not os.path.exists(folder):
-        folder = "../" + DEFAULT_FOLDER_LOCATION
+        folder = DEFAULT_FOLDER_LOCATION
 
     loader = CSVLoader(
         file_path=f"{folder}/complaints.csv",
