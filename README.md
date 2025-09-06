@@ -1,4 +1,41 @@
-# Federal Student Loan AI Assistant
+# Federal Student Loan AI Assistant   |   ![RAG](https://img.shields.io/badge/RAG-Student_Loan_Assistant-FF6B6B?style=for-the-badge&logo=openai&logoColor=white)
+
+<!-- Core Tech Stack -->
+![Python](https://img.shields.io/badge/Python-3.13+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.1+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-14.2+-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Orchestration_Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+
+<!-- AI/ML/LLM Stack -->
+![LangChain](https://img.shields.io/badge/🦜_LangChain-0.3+-1C3C3C?style=for-the-badge&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-Agents-FF6B35?style=for-the-badge&logo=graphql&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-412991?style=for-the-badge&logo=openai&logoColor=white)
+![Qdrant](https://img.shields.io/badge/Qdrant-Vector_DB-DC382D?style=for-the-badge&logo=database&logoColor=white)
+![RAGAS](https://img.shields.io/badge/RAGAS-Evaluation-FF9500?style=for-the-badge&logo=chartdotjs&logoColor=white)
+![Cohere](https://img.shields.io/badge/Cohere-Rerank-39A0CA?style=for-the-badge&logo=cohere&logoColor=white)
+
+<!-- Data & Performance -->
+![NumPy](https://img.shields.io/badge/NumPy-2.2+-013243?style=flat&logo=numpy&logoColor=white)
+![Pandas](https://img.shields.io/badge/Pandas-2.1+-150458?style=flat&logo=pandas&logoColor=white)
+![Matplotlib](https://img.shields.io/badge/Matplotlib-Visualization-11557c?style=flat&logo=python&logoColor=white)
+![Jupyter](https://img.shields.io/badge/Jupyter-Lab_4.0+-F37626?style=flat&logo=jupyter&logoColor=white)
+
+<!-- Performance Metrics -->
+![Context Recall](https://img.shields.io/badge/Context_Recall-0.637-brightgreen?style=for-the-badge&logo=target&logoColor=white)
+![Response Time](https://img.shields.io/badge/Response_Time-3--8s-blue?style=for-the-badge&logo=stopwatch&logoColor=white)
+![Dataset Size](https://img.shields.io/badge/Dataset-2.2K_Chunks-orange?style=for-the-badge&logo=database&logoColor=white)
+![Memory Efficient](https://img.shields.io/badge/Memory-39.2MB_Vectors-green?style=for-the-badge&logo=memory&logoColor=white)
+
+<!-- AIE7 & Certification -->
+![AIE7 Certified](https://img.shields.io/badge/AIE7-Certified_Challenge-gold?style=for-the-badge&logo=certificate&logoColor=white)
+![Student Loans](https://img.shields.io/badge/Domain-Federal_Student_Loans-2563eb?style=for-the-badge&logo=graduationcap&logoColor=white)
+
+<!-- License & Social -->
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+![GitHub](https://img.shields.io/github/stars/neomatrix369/AIE7-Cert-Challenge?style=social)
+
+---
 
 **AIE7 Certification Challenge** - Advanced RAG system for federal student loan customer service
 
