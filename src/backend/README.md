@@ -1,6 +1,38 @@
 # Simple Federal Student Loan RAG API
 
-A streamlined FastAPI backend for the AIE7 Certification Challenge that provides a single `/ask` endpoint for federal student loan questions.
+<!-- Backend Component Badges -->
+![Backend API](https://img.shields.io/badge/Component-Backend%20API-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![RAG System](https://img.shields.io/badge/System-RAG%20Engine-FF6B6B?style=for-the-badge&logo=openai&logoColor=white)
+![Microservice](https://img.shields.io/badge/Architecture-Microservice-4F46E5?style=for-the-badge&logo=docker&logoColor=white)
+
+<!-- Core Technologies -->
+![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.13+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Pydantic](https://img.shields.io/badge/Pydantic-Data%20Validation-E92063?style=for-the-badge&logo=pydantic&logoColor=white)
+![Uvicorn](https://img.shields.io/badge/Uvicorn-ASGI%20Server-4051B5?style=for-the-badge&logo=uvicorn&logoColor=white)
+
+<!-- AI/ML Stack -->
+![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-412991?style=for-the-badge&logo=openai&logoColor=white)
+![LangChain](https://img.shields.io/badge/LangChain-0.3+-1C3C3C?style=for-the-badge&logo=chainlink&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-Agents-FF6B35?style=for-the-badge&logo=graphql&logoColor=white)
+![Qdrant](https://img.shields.io/badge/Qdrant-Vector%20Store-DC382D?style=for-the-badge&logo=database&logoColor=white)
+![RAGAS](https://img.shields.io/badge/RAGAS-Evaluation-FF9500?style=for-the-badge&logo=chartdotjs&logoColor=white)
+
+<!-- Data & Performance -->
+![Hybrid Dataset](https://img.shields.io/badge/Dataset-Hybrid%20Knowledge-8B5CF6?style=for-the-badge&logo=database&logoColor=white)
+![Vector Embeddings](https://img.shields.io/badge/Embeddings-39.2MB-10B981?style=for-the-badge&logo=vector&logoColor=white)
+![Context Recall](https://img.shields.io/badge/Context%20Recall-0.64-brightgreen?style=for-the-badge&logo=target&logoColor=white)
+![Faithfulness](https://img.shields.io/badge/Faithfulness-0.90-brightgreen?style=for-the-badge&logo=checkmark&logoColor=white)
+
+<!-- Production Features -->
+![Docker Production](https://img.shields.io/badge/Docker-Production%20Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Health Checks](https://img.shields.io/badge/Health-Monitored-22C55E?style=for-the-badge&logo=heart&logoColor=white)
+![Auto Restart](https://img.shields.io/badge/Restart-Automated-F59E0B?style=for-the-badge&logo=refresh&logoColor=white)
+![Performance Metrics](https://img.shields.io/badge/Metrics-Real%20time-06B6D4?style=for-the-badge&logo=analytics&logoColor=white)
+
+---
+
+A streamlined FastAPI backend for the AIE7 Certification Challenge that provides a single `/ask` endpoint for federal student loan questions with comprehensive RAG capabilities, hybrid knowledge base, and production-ready containerization.
 
 > **🚀 Quick Start**: For the easiest setup, use the **unified Docker orchestration** from the project root:
 > ```bash
