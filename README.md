@@ -43,14 +43,8 @@ An intelligent assistant that combines official federal loan policies with real 
 
 ## Visuals
 
-|: ![Frontend Chat Interface](./screenshots/frontend-app-chat-session.jpg) :|: ![RAGAS Evaluation Results](./screenshots/retrievers%20comparisons%20using%20RAGAS%20evaluation.png) :|
+|: ![App Frontend Page](./screenshots/front-page-screenshot.png) :|: ![Frontend Chat Interface](./screenshots/frontend-app-chat-session.jpg) :|
 |:----:|:----:|
-
-|: ![API Documentation](./screenshots/swagger-ui-screenshot.png) :|: ![Performance Monitoring](./screenshots/retrievers-quick-performance-evaluation-langsmith-and-ragas.jpg) :|
-|:----:|:----:|
-
-|: ![LangSmith Tool Monitoring](./screenshots/LangSmith%20monitoring%20ask_naive_llm_tool%20tool.jpg) :|
-|:----:|
 
 ## 🚀 **New: Complete Docker Orchestration**
 **Get the entire RAG system running with a single command!** All services (Vector DB + Backend API + Jupyter + Frontend) are now fully containerized with automated service management, health checks, and persistent volumes.
