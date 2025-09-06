@@ -41,6 +41,11 @@
 
 An intelligent assistant that combines official federal loan policies with real customer experiences to provide comprehensive guidance on student loan questions, repayment options, forgiveness programs, and servicer issues.
 
+## Visuals
+
+|: ![App Frontend Page](./screenshots/front-page-screenshot.png) :|: ![Frontend Chat Interface](./screenshots/frontend-app-chat-session.jpg) :|
+|:----:|:----:|
+
 ## 🚀 **New: Complete Docker Orchestration**
 **Get the entire RAG system running with a single command!** All services (Vector DB + Backend API + Jupyter + Frontend) are now fully containerized with automated service management, health checks, and persistent volumes.
 
