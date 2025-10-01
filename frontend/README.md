@@ -1,6 +1,6 @@
 # Federal Student Loan Assistant - Frontend
 
-<!-- Frontend Component Badges -->
+<!-- Frontend Component Identity -->
 ![Frontend Component](https://img.shields.io/badge/Component-Frontend%20Interface-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![Web UI](https://img.shields.io/badge/UI-Chat%20Interface-4F46E5?style=for-the-badge&logo=chat&logoColor=white)
 ![Responsive Design](https://img.shields.io/badge/Design-Responsive-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
@@ -10,17 +10,6 @@
 ![React](https://img.shields.io/badge/React-18.2+-61DAFB?style=for-the-badge&logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.1+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.3+-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
-
-<!-- Features -->
-![Real-time Chat](https://img.shields.io/badge/Chat-Real%20time-FF6B35?style=for-the-badge&logo=socket.io&logoColor=white)
-![Multi-Persona](https://img.shields.io/badge/Persona-Multi%20Role-9333EA?style=for-the-badge&logo=users&logoColor=white)
-![Performance Metrics](https://img.shields.io/badge/Metrics-Performance%20Display-F59E0B?style=for-the-badge&logo=analytics&logoColor=white)
-![Session Management](https://img.shields.io/badge/Sessions-Persistent-10B981?style=for-the-badge&logo=database&logoColor=white)
-
-<!-- Docker & Deployment -->
-![Docker Ready](https://img.shields.io/badge/Docker-Production%20Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Container Discovery](https://img.shields.io/badge/Discovery-Auto%20Backend-0EA5E9?style=for-the-badge&logo=search&logoColor=white)
-![Health Checks](https://img.shields.io/badge/Health-Automated%20Checks-22C55E?style=for-the-badge&logo=heart&logoColor=white)
 
 ---
 
@@ -368,3 +357,18 @@ Monitor health status:
 ```bash
 docker inspect --format='{{.State.Health}}' frontend
 ```
+
+---
+
+## 🎯 Features & Deployment
+
+<!-- Features -->
+![Real-time Chat](https://img.shields.io/badge/Chat-Real%20time-FF6B35?style=for-the-badge&logo=socket.io&logoColor=white)
+![Multi-Persona](https://img.shields.io/badge/Persona-Multi%20Role-9333EA?style=for-the-badge&logo=users&logoColor=white)
+![Performance Metrics](https://img.shields.io/badge/Metrics-Performance%20Display-F59E0B?style=for-the-badge&logo=analytics&logoColor=white)
+![Session Management](https://img.shields.io/badge/Sessions-Persistent-10B981?style=for-the-badge&logo=database&logoColor=white)
+
+<!-- Docker & Deployment -->
+![Docker Ready](https://img.shields.io/badge/Docker-Production%20Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Container Discovery](https://img.shields.io/badge/Discovery-Auto%20Backend-0EA5E9?style=for-the-badge&logo=search&logoColor=white)
+![Health Checks](https://img.shields.io/badge/Health-Automated%20Checks-22C55E?style=for-the-badge&logo=heart&logoColor=white)
