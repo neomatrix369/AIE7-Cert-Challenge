@@ -6,7 +6,7 @@
 ![Student Loans](https://img.shields.io/badge/Domain-Federal_Student_Loans-2563eb?style=for-the-badge&logo=graduationcap&logoColor=white)
 
 <!-- Core Tech Stack -->
-![Python](https://img.shields.io/badge/Python-3.13+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.1+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-14.2+-000000?style=for-the-badge&logo=next.js&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-009688?style=for-the-badge&logo=fastapi&logoColor=white)
@@ -87,8 +87,21 @@ cp .env-example .env
 
 ### 2. Start All Services with Docker
 ```bash
-# 🌟 RECOMMENDED: Automated orchestration with health checks
-./start-services.sh
+# 🌟 RECOMMENDED: Full startup with automatic cleanup
+./start-services.sh                   # Stops existing, cleans images, rebuilds all services
+
+# ⚡ Quick Development Options
+./start-services.sh --skip-cleanup    # Faster restart (skips image cleanup)
+./start-services.sh --no-frontend     # Start without frontend UI
+./start-services.sh --help            # Show all options
+
+# 📌 What start-services.sh does:
+#   ✅ Stops any existing containers (docker compose down)
+#   ✅ Cleans up dangling images/cache (unless --skip-cleanup)
+#   ✅ Pulls external images (Qdrant)
+#   ✅ Rebuilds custom services (backend, jupyter, frontend)
+#   ✅ Starts all services with health checks
+#   ✅ Preserves data volumes (Qdrant, cache, notebooks)
 
 # Alternative: Manual Docker Compose
 docker compose up --build -d
@@ -96,29 +109,36 @@ docker compose up --build -d
 
 **🎉 Single Command Deployment!** All services start automatically with:
 - ✅ **Service Dependencies** - Proper startup ordering
-- ✅ **Health Checks** - Automated service validation  
+- ✅ **Health Checks** - Automated service validation
 - ✅ **Data Persistence** - Volumes for cache and data
 - ✅ **Network Isolation** - Dedicated Docker network
 - ✅ **Multi-stage Builds** - Optimized container images
+- ✅ **Automatic Cleanup** - Docker image/cache management
 
 **Services Available:**
 - **📊 Qdrant Vector Database**: http://localhost:6333/dashboard
-- **🤖 Backend RAG API**: http://localhost:8000 
+- **🤖 Backend RAG API**: http://localhost:8000
 - **📚 Jupyter Lab**: http://localhost:8888
 - **📖 API Documentation**: http://localhost:8000/docs
 - **🎨 Frontend Dashboard**: http://localhost:3000
 
 ### ⏹️ Stop All Services
 ```bash
-# 🛑 Graceful shutdown with automatic cleanup (preserves data)
-./stop-services.sh                    # Stops services + cleans dangling images
+# 🛑 Safe shutdown options
+./stop-services.sh                    # Stop services, clean dangling images/cache
+./stop-services.sh --skip-cleanup     # Stop services only (fastest, no cleanup)
+./stop-services.sh --remove           # Stop + remove containers (keep volumes)
+./stop-services.sh --clean            # Full cleanup ⚠️ DELETES ALL DATA
+./stop-services.sh --help             # Show all options
 
-# 🗑️ Advanced shutdown options  
-./stop-services.sh --remove          # Also removes containers + cleans images
-./stop-services.sh --clean           # Full cleanup (⚠️ removes all data)
+# 📌 What each mode does:
+# Default:       Stops containers (keeps in stopped state), cleans images/cache
+# --skip-cleanup: Stops containers only, no cleanup
+# --remove:      Stops and removes containers, cleans images (keeps volumes)
+# --clean:       Removes containers, volumes, and ALL Docker resources ⚠️
 
 # 🔧 Alternative: Direct Docker Compose
-docker compose down
+docker compose down                   # Stop and remove containers (keep volumes)
 ```
 
 ### 📊 **Initialization Progress**
@@ -141,14 +161,16 @@ docker compose logs -f qdrant
 # Check service health status
 docker compose ps
 
-# Restart specific service  
+# Restart specific service
 docker compose restart backend
 
-# 🧹 Automatic cleanup features (built-in)
-./start-services.sh              # Auto-cleans dangling images & build cache before start
-./stop-services.sh               # Auto-cleans dangling images after stop
-./stop-services.sh --remove      # Stop + remove containers + clean images
-./stop-services.sh --clean       # Full cleanup including all data volumes
+# 🧹 Service Management with Options
+./start-services.sh --help       # Show all startup options
+./stop-services.sh --help        # Show all shutdown options
+
+# Examples:
+./start-services.sh --skip-cleanup     # Quick restart for development
+./stop-services.sh --skip-cleanup      # Fast stop without cleanup
 
 # Scale services (if needed)
 docker compose up --scale backend=2 -d
@@ -306,14 +328,24 @@ This project implements cutting-edge RAG techniques with comprehensive evaluatio
 
 **🚀 Deployment Options:**
 ```bash
-# 🌟 Recommended: Full orchestration
-./start-services.sh
+# 🌟 Recommended: Full orchestration with health checks
+./start-services.sh                    # Complete startup with cleanup
+./start-services.sh --skip-cleanup     # Faster restart for development
+./start-services.sh --no-frontend      # Backend + Jupyter only
+./start-services.sh --help             # See all options
 
 # Manual: Individual services
 docker compose up qdrant backend jupyter frontend -d
 
 # Development: Backend + Qdrant only
 docker compose up qdrant backend -d
+
+# Shutdown options
+./stop-services.sh                     # Safe stop with cleanup
+./stop-services.sh --skip-cleanup      # Quick stop without cleanup
+./stop-services.sh --remove            # Remove containers (keep data)
+./stop-services.sh --clean             # Full cleanup ⚠️
+./stop-services.sh --help              # See all options
 ```
 
 
@@ -450,11 +482,18 @@ docker compose up --scale backend=3 -d
 export QDRANT_URL=http://your-qdrant-cluster:6333
 ./start-services.sh
 
-# 🧹 Automatic disk space management
-# Both scripts include automatic cleanup of:
-# - Dangling Docker images (unused image layers)
-# - Build cache (intermediate build steps)
-# - Orphaned containers (from previous runs)
+# 🧹 Docker disk space management
+# Default behavior: Automatic cleanup of dangling images/cache
+./start-services.sh              # Cleans before starting
+./stop-services.sh               # Cleans after stopping
+
+# Skip cleanup for faster operations (development)
+./start-services.sh --skip-cleanup
+./stop-services.sh --skip-cleanup
+
+# Manual cleanup if needed
+docker system prune -f           # Remove unused images/containers
+docker builder prune -f          # Clear build cache
 
 # 📊 Monitor disk usage
 docker system df                     # Show Docker disk usage
