@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     g++ \
     curl \
     build-essential \
+    libffi-dev \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir uv
 
