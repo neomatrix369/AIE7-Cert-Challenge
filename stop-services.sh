@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Student Loan RAG System - Service Shutdown Script
-# Gracefully stop all Docker services
+# Gracefully stop all Docker services with interactive menu
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -10,72 +10,58 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Show help
-show_help() {
-    echo -e "${BLUE}🛑 Student Loan RAG Services - Stop Script${NC}"
-    echo "============================================"
-    echo ""
-    echo "Usage: ./stop-services.sh [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo ""
-    echo "  (no options)"
-    echo "      What it does:"
-    echo "        • Stops all running containers (docker compose stop)"
-    echo "        • Cleans up dangling Docker images"
-    echo "        • Cleans up Docker build cache"
-    echo "        • Keeps containers (in stopped state)"
-    echo "        • Keeps all data volumes (Qdrant, cache, notebooks)"
-    echo ""
-    echo "  --remove"
-    echo "      What it does:"
-    echo "        • Stops all running containers"
-    echo "        • Removes containers (docker compose down)"
-    echo "        • Cleans up dangling Docker images"
-    echo "        • Keeps all data volumes (Qdrant, cache, notebooks)"
-    echo "      Note: Containers will be recreated on next startup"
-    echo ""
-    echo "  --clean  ⚠️  DESTRUCTIVE"
-    echo "      What it does:"
-    echo "        • Stops all running containers"
-    echo "        • Removes containers AND volumes (docker compose down --volumes)"
-    echo "        • Removes ALL unused Docker images (aggressive cleanup)"
-    echo "        • Removes ALL Docker build cache"
-    echo "      WARNING: This DELETES all vector database data and cached evaluations!"
-    echo ""
-    echo "  --skip-cleanup"
-    echo "      Can be combined with default or --remove modes"
-    echo "      Skips Docker image and cache cleanup for faster operation"
-    echo ""
-    echo "  --help, -h"
-    echo "      Show this help message"
-    echo ""
-    echo "Examples:"
-    echo "  ./stop-services.sh                    # Stop services, clean up images/cache"
-    echo "  ./stop-services.sh --skip-cleanup     # Stop services, keep images/cache"
-    echo "  ./stop-services.sh --remove           # Stop and remove containers"
-    echo "  ./stop-services.sh --clean            # Remove everything (destructive)"
-    echo ""
-    exit 0
-}
-
-# Parse arguments
-MODE="default"
-SKIP_CLEANUP=false
+# Parse command line arguments for non-interactive mode
+MODE=""
+NON_INTERACTIVE=false
 
 for arg in "$@"; do
     case $arg in
         --help|-h)
-            show_help
+            echo -e "${BLUE}🛑 Student Loan RAG Services - Stop Script${NC}"
+            echo "============================================"
+            echo ""
+            echo "Usage: ./stop-services.sh [OPTIONS]"
+            echo ""
+            echo "Interactive Mode (default):"
+            echo "  Run without options to see an interactive menu with 4 stop modes"
+            echo ""
+            echo "Non-Interactive Mode:"
+            echo "  --mode=standard     Standard stop with cleanup (default)"
+            echo "  --mode=quick        Quick pause without cleanup (fastest)"
+            echo "  --mode=deep         Deep cleanup with container removal"
+            echo "  --mode=nuclear      Nuclear reset - DELETES ALL DATA ⚠️"
+            echo "  --non-interactive   Skip menu, use specified mode"
+            echo ""
+            echo "Legacy Flags (backward compatible):"
+            echo "  --skip-cleanup      Maps to --mode=quick"
+            echo "  --remove            Maps to --mode=deep"
+            echo "  --clean             Maps to --mode=nuclear"
+            echo ""
+            echo "Examples:"
+            echo "  ./stop-services.sh                      # Interactive menu"
+            echo "  ./stop-services.sh --mode=standard      # Standard stop"
+            echo "  ./stop-services.sh --mode=quick         # Quick pause"
+            echo "  ./stop-services.sh --non-interactive    # Non-interactive standard"
+            echo ""
+            exit 0
             ;;
-        --remove)
-            MODE="remove"
+        --non-interactive)
+            NON_INTERACTIVE=true
             ;;
-        --clean)
-            MODE="clean"
+        --mode=*)
+            MODE="${arg#*=}"
             ;;
         --skip-cleanup)
-            SKIP_CLEANUP=true
+            MODE="quick"
+            NON_INTERACTIVE=true
+            ;;
+        --remove)
+            MODE="deep"
+            NON_INTERACTIVE=true
+            ;;
+        --clean)
+            MODE="nuclear"
+            NON_INTERACTIVE=true
             ;;
         *)
             echo -e "${RED}❌ Unknown option: $arg${NC}"
@@ -87,6 +73,7 @@ done
 
 echo -e "${BLUE}🛑 Stopping Student Loan RAG Services${NC}"
 echo "========================================"
+echo ""
 
 # Check for docker-compose or docker compose
 if command -v docker-compose &> /dev/null; then
@@ -94,62 +81,169 @@ if command -v docker-compose &> /dev/null; then
 elif command -v docker compose &> /dev/null; then
     DOCKER_COMPOSE_COMMAND="docker compose"
 else
-    echo "❌ Docker Compose is not installed."
+    echo -e "${RED}❌ Docker Compose is not installed.${NC}"
     exit 1
 fi
 
+# Show current status
+echo -e "${BLUE}📦 Current container status:${NC}"
+$DOCKER_COMPOSE_COMMAND ps
+echo ""
+
+# Show disk usage info
+echo -e "${BLUE}💾 Docker disk usage:${NC}"
+docker system df --format "table {{.Type}}\t{{.TotalCount}}\t{{.Size}}\t{{.Reclaimable}}" | head -5
+echo ""
+
+# Interactive menu if not in non-interactive mode
+if [ "$NON_INTERACTIVE" = false ] && [ -z "$MODE" ]; then
+    echo -e "${YELLOW}Choose stop method:${NC}"
+    echo ""
+    echo "1. 🛑 Standard stop (recommended for daily use)"
+    echo "   • Stops all containers"
+    echo "   • Cleans up: dangling images, build cache"
+    echo "   • Preserves: stopped containers, volumes, used images"
+    echo ""
+    echo "2. ⏸️  Quick pause (fastest restart)"
+    echo "   • Stops containers only"
+    echo "   • No cleanup performed"
+    echo "   • Next startup will be faster"
+    echo ""
+    echo "3. 🔧 Deep cleanup (reclaim disk space)"
+    echo "   • Stops and removes containers"
+    echo "   • Cleans up: dangling images, build cache"
+    echo "   • Preserves: volumes (your data)"
+    echo ""
+    echo "4. 💣 Nuclear reset (⚠️  DATA LOSS WARNING)"
+    echo "   • Removes containers AND volumes"
+    echo "   • ⚠️  DELETES: Vector DB, cache, notebooks"
+    echo "   • Use only when starting completely fresh"
+    echo ""
+
+    read -p "Enter choice (1-4) or press Enter for default [1]: " choice
+    choice=${choice:-1}
+
+    case $choice in
+        1) MODE="standard" ;;
+        2) MODE="quick" ;;
+        3) MODE="deep" ;;
+        4) MODE="nuclear" ;;
+        *)
+            echo -e "${RED}❌ Invalid choice. Using standard stop.${NC}"
+            MODE="standard"
+            ;;
+    esac
+    echo ""
+fi
+
+# Default to standard mode if still not set
+MODE=${MODE:-standard}
+
 # Execute based on mode
 case $MODE in
-    default)
-        echo -e "${BLUE}Mode: Default (stop services, keep containers and volumes)${NC}"
+    standard)
+        echo -e "${BLUE}🛑 Mode: Standard stop${NC}"
         echo -e "${YELLOW}⏳ Stopping services gracefully...${NC}"
         $DOCKER_COMPOSE_COMMAND stop
 
-        if [ "$SKIP_CLEANUP" = false ]; then
-            echo -e "${BLUE}🧹 Cleaning up dangling images and build cache...${NC}"
-            echo -e "${YELLOW}   (Keeps: stopped containers, volumes, used images)${NC}"
-            docker image prune -f > /dev/null 2>&1 || true
-            docker builder prune -f > /dev/null 2>&1 || true
-        else
-            echo -e "${YELLOW}⏭️  Skipping cleanup (--skip-cleanup specified)${NC}"
-        fi
+        echo -e "${BLUE}🧹 Cleaning up dangling images and build cache...${NC}"
+        echo -e "${YELLOW}   (Keeps: stopped containers, volumes, used images)${NC}"
+        docker image prune -f > /dev/null 2>&1 || true
+        docker builder prune -f > /dev/null 2>&1 || true
+
+        echo ""
+        echo "📦 What's preserved:"
+        echo "   ✅ Stopped containers (can be restarted)"
+        echo "   ✅ All data volumes (Qdrant, cache, notebooks)"
+        echo "   ✅ Docker images (except dangling ones)"
         ;;
 
-    remove)
-        echo -e "${BLUE}Mode: Remove (stop and remove containers, keep volumes)${NC}"
+    quick)
+        echo -e "${BLUE}⏸️  Mode: Quick pause${NC}"
+        echo -e "${YELLOW}⏳ Stopping services gracefully...${NC}"
+        $DOCKER_COMPOSE_COMMAND stop
+
+        echo -e "${YELLOW}⏭️  Skipping cleanup for faster restart${NC}"
+
+        echo ""
+        echo "📦 What's preserved:"
+        echo "   ✅ Stopped containers"
+        echo "   ✅ All data volumes"
+        echo "   ✅ All Docker images and build cache"
+        ;;
+
+    deep)
+        echo -e "${BLUE}🔧 Mode: Deep cleanup${NC}"
+        echo -e "${YELLOW}This will remove containers and clean up unused Docker resources.${NC}"
+
+        if [ "$NON_INTERACTIVE" = false ]; then
+            read -p "Continue? (y/N): " confirm_cleanup
+            if [[ ! "$confirm_cleanup" =~ ^[Yy]$ ]]; then
+                echo -e "${YELLOW}Cancelled. Falling back to standard stop...${NC}"
+                MODE="standard"
+                $DOCKER_COMPOSE_COMMAND stop
+                docker image prune -f > /dev/null 2>&1 || true
+                docker builder prune -f > /dev/null 2>&1 || true
+                echo -e "${GREEN}✅ Standard stop completed${NC}"
+                exit 0
+            fi
+        fi
+
         echo -e "${YELLOW}⏳ Stopping and removing containers...${NC}"
         $DOCKER_COMPOSE_COMMAND down --remove-orphans
 
-        if [ "$SKIP_CLEANUP" = false ]; then
-            echo -e "${BLUE}🧹 Cleaning up dangling images...${NC}"
-            echo -e "${YELLOW}   (Keeps: volumes, used images)${NC}"
-            docker image prune -f > /dev/null 2>&1 || true
-        else
-            echo -e "${YELLOW}⏭️  Skipping cleanup (--skip-cleanup specified)${NC}"
-        fi
+        echo -e "${BLUE}🧹 Cleaning up dangling images...${NC}"
+        echo -e "${YELLOW}   (Keeps: volumes, used images)${NC}"
+        docker image prune -f > /dev/null 2>&1 || true
+
+        echo ""
+        echo "📦 What's preserved:"
+        echo "   ✅ All data volumes (Qdrant, cache, notebooks)"
+        echo "   ✅ Docker images (except dangling ones)"
+        echo "   ℹ️  Containers removed (will be recreated on restart)"
         ;;
 
-    clean)
-        echo -e "${RED}Mode: Clean - ⚠️  DESTRUCTIVE OPERATION${NC}"
+    nuclear)
+        echo -e "${RED}💣 Mode: Nuclear reset - ⚠️  DESTRUCTIVE OPERATION${NC}"
         echo -e "${YELLOW}This will:"
         echo "  • Stop and remove all containers"
         echo "  • Delete ALL volumes (vector DB, cache, notebooks)"
         echo "  • Remove all unused Docker images"
         echo "  • Clear all Docker build cache${NC}"
         echo ""
-        read -p "Are you sure? Type 'yes' to confirm: " -r
-        echo
-        if [[ $REPLY == "yes" ]]; then
-            echo -e "${YELLOW}⏳ Removing containers and volumes...${NC}"
-            $DOCKER_COMPOSE_COMMAND down --remove-orphans --volumes
-            echo -e "${YELLOW}🧹 Cleaning up all unused Docker resources...${NC}"
-            docker system prune -af > /dev/null 2>&1 || true
-            docker builder prune -af > /dev/null 2>&1 || true
-            echo -e "${RED}⚠️  All data deleted!${NC}"
+
+        if [ "$NON_INTERACTIVE" = false ]; then
+            read -p "Are you ABSOLUTELY SURE? Type 'DELETE ALL DATA' to confirm: " confirm_nuclear
+            if [[ "$confirm_nuclear" != "DELETE ALL DATA" ]]; then
+                echo -e "${GREEN}✅ Nuclear reset cancelled. Your data is safe.${NC}"
+                echo -e "${YELLOW}Falling back to standard stop...${NC}"
+                $DOCKER_COMPOSE_COMMAND stop
+                docker image prune -f > /dev/null 2>&1 || true
+                docker builder prune -f > /dev/null 2>&1 || true
+                echo -e "${GREEN}✅ Standard stop completed${NC}"
+                exit 0
+            fi
         else
-            echo -e "${BLUE}❌ Cancelled. Use './stop-services.sh' for safe shutdown.${NC}"
-            exit 1
+            echo -e "${RED}⚠️  Running in non-interactive mode - proceeding with nuclear reset!${NC}"
         fi
+
+        echo -e "${YELLOW}⏳ Removing containers and volumes...${NC}"
+        $DOCKER_COMPOSE_COMMAND down --remove-orphans --volumes
+
+        echo -e "${YELLOW}🧹 Cleaning up all unused Docker resources...${NC}"
+        docker system prune -af > /dev/null 2>&1 || true
+        docker builder prune -af > /dev/null 2>&1 || true
+
+        echo -e "${RED}⚠️  All data deleted!${NC}"
+
+        echo ""
+        echo "📦 What's preserved:"
+        echo "   ❌ Nothing - full cleanup performed"
+        ;;
+
+    *)
+        echo -e "${RED}❌ Invalid mode: $MODE${NC}"
+        exit 1
         ;;
 esac
 
@@ -157,28 +251,13 @@ echo ""
 echo -e "${GREEN}✅ Operation completed successfully${NC}"
 echo ""
 
-# Show what was preserved based on mode
-case $MODE in
-    default)
-        echo "📦 What's preserved:"
-        echo "   ✅ Stopped containers (can be restarted)"
-        echo "   ✅ All data volumes (Qdrant, cache, notebooks)"
-        echo "   ✅ Docker images (unless cleaned up)"
-        ;;
-    remove)
-        echo "📦 What's preserved:"
-        echo "   ✅ All data volumes (Qdrant, cache, notebooks)"
-        echo "   ✅ Docker images (unless cleaned up)"
-        echo "   ℹ️  Containers removed (will be recreated on restart)"
-        ;;
-    clean)
-        echo "📦 What's preserved:"
-        echo "   ❌ Nothing - full cleanup performed"
-        ;;
-esac
-
+# Show final status
+echo -e "${BLUE}📊 Final container status:${NC}"
+$DOCKER_COMPOSE_COMMAND ps
 echo ""
-echo "🔧 Available commands:"
-echo "   ./start-services.sh              - Start all services"
-echo "   ./stop-services.sh --help        - See all stop options"
-echo "   docker compose ps                - Check container status"
+
+echo -e "${BLUE}💡 What's next?${NC}"
+echo "   🚀 Start services:      ./start-services.sh"
+echo "   🔍 Check status:        docker compose ps"
+echo "   ❓ Help:               ./stop-services.sh --help"
+echo ""
