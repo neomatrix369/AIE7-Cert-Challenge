@@ -87,21 +87,40 @@ cp .env-example .env
 
 ### 2. Start All Services with Docker
 ```bash
-# 🌟 RECOMMENDED: Full startup with automatic cleanup
-./start-services.sh                   # Stops existing, cleans images, rebuilds all services
+# 🚀 Interactive Menu (Default) - Choose your startup mode
+./start-services.sh
 
-# ⚡ Quick Development Options
-./start-services.sh --skip-cleanup    # Faster restart (skips image cleanup)
-./start-services.sh --no-frontend     # Start without frontend UI
-./start-services.sh --help            # Show all options
+# The script presents 4 startup options:
+# 1. 🚀 Full startup (recommended)
+#    • Stops existing containers
+#    • Cleans up: dangling images, build cache
+#    • Rebuilds and starts all services
+#    • Includes: Backend + Jupyter + Frontend + Qdrant
+#
+# 2. ⚡ Quick restart (development)
+#    • Skips Docker cleanup (faster)
+#    • Rebuilds and starts all services
+#    • Best for active development
+#
+# 3. 🔬 Backend + Jupyter only
+#    • Skips frontend service
+#    • Ideal for notebook experiments
+#    • Faster startup
+#
+# 4. 🎯 Custom configuration
+#    • Choose individual options interactively
+#    • Skip cleanup? Skip frontend?
 
-# 📌 What start-services.sh does:
-#   ✅ Stops any existing containers (docker compose down)
-#   ✅ Cleans up dangling images/cache (unless --skip-cleanup)
-#   ✅ Pulls external images (Qdrant)
-#   ✅ Rebuilds custom services (backend, jupyter, frontend)
-#   ✅ Starts all services with health checks
-#   ✅ Preserves data volumes (Qdrant, cache, notebooks)
+# ⚡ Non-Interactive Mode (for automation/scripts)
+./start-services.sh --mode=full              # Full startup with cleanup
+./start-services.sh --mode=quick             # Quick restart (no cleanup)
+./start-services.sh --mode=backend           # Backend + Jupyter only
+./start-services.sh --non-interactive        # Non-interactive full startup
+
+# 🔧 Additional flags
+./start-services.sh --skip-cleanup           # Custom: skip cleanup
+./start-services.sh --no-frontend            # Custom: skip frontend
+./start-services.sh --help                   # Show all options
 
 # Alternative: Manual Docker Compose
 docker compose up --build -d
@@ -124,18 +143,42 @@ docker compose up --build -d
 
 ### ⏹️ Stop All Services
 ```bash
-# 🛑 Safe shutdown options
-./stop-services.sh                    # Stop services, clean dangling images/cache
-./stop-services.sh --skip-cleanup     # Stop services only (fastest, no cleanup)
-./stop-services.sh --remove           # Stop + remove containers (keep volumes)
-./stop-services.sh --clean            # Full cleanup ⚠️ DELETES ALL DATA
-./stop-services.sh --help             # Show all options
+# 🛑 Interactive Menu (Default) - Choose your stop method
+./stop-services.sh
 
-# 📌 What each mode does:
-# Default:       Stops containers (keeps in stopped state), cleans images/cache
-# --skip-cleanup: Stops containers only, no cleanup
-# --remove:      Stops and removes containers, cleans images (keeps volumes)
-# --clean:       Removes containers, volumes, and ALL Docker resources ⚠️
+# The script presents 4 stop options:
+# 1. 🛑 Standard stop (recommended for daily use)
+#    • Stops all containers
+#    • Cleans up: dangling images, build cache
+#    • Preserves: stopped containers, volumes, used images
+#
+# 2. ⏸️  Quick pause (fastest restart)
+#    • Stops containers only
+#    • No cleanup performed
+#    • Next startup will be faster
+#
+# 3. 🔧 Deep cleanup (reclaim disk space)
+#    • Stops and removes containers
+#    • Cleans up: dangling images, build cache
+#    • Preserves: volumes (your data)
+#
+# 4. 💣 Nuclear reset (⚠️  DATA LOSS WARNING)
+#    • Removes containers AND volumes
+#    • ⚠️  DELETES: Vector DB, cache, notebooks
+#    • Use only when starting completely fresh
+
+# ⚡ Non-Interactive Mode (for automation/scripts)
+./stop-services.sh --mode=standard           # Standard stop with cleanup
+./stop-services.sh --mode=quick              # Quick pause (no cleanup)
+./stop-services.sh --mode=deep               # Deep cleanup
+./stop-services.sh --mode=nuclear            # Nuclear reset ⚠️
+./stop-services.sh --non-interactive         # Non-interactive standard
+
+# 🔧 Legacy flags (backward compatible)
+./stop-services.sh --skip-cleanup            # Maps to --mode=quick
+./stop-services.sh --remove                  # Maps to --mode=deep
+./stop-services.sh --clean                   # Maps to --mode=nuclear
+./stop-services.sh --help                    # Show all options
 
 # 🔧 Alternative: Direct Docker Compose
 docker compose down                   # Stop and remove containers (keep volumes)
@@ -164,13 +207,15 @@ docker compose ps
 # Restart specific service
 docker compose restart backend
 
-# 🧹 Service Management with Options
+# 🧹 Service Management with Interactive Menus
+./start-services.sh              # Interactive startup menu (4 options)
+./stop-services.sh               # Interactive stop menu (4 options)
 ./start-services.sh --help       # Show all startup options
 ./stop-services.sh --help        # Show all shutdown options
 
-# Examples:
-./start-services.sh --skip-cleanup     # Quick restart for development
-./stop-services.sh --skip-cleanup      # Fast stop without cleanup
+# Non-interactive examples (for scripts/automation):
+./start-services.sh --mode=quick       # Quick restart for development
+./stop-services.sh --mode=quick        # Fast stop without cleanup
 
 # Scale services (if needed)
 docker compose up --scale backend=2 -d
@@ -328,24 +373,29 @@ This project implements cutting-edge RAG techniques with comprehensive evaluatio
 
 **🚀 Deployment Options:**
 ```bash
-# 🌟 Recommended: Full orchestration with health checks
-./start-services.sh                    # Complete startup with cleanup
-./start-services.sh --skip-cleanup     # Faster restart for development
-./start-services.sh --no-frontend      # Backend + Jupyter only
+# 🌟 Interactive Deployment (Recommended)
+./start-services.sh                    # Interactive menu with 4 startup modes
+./stop-services.sh                     # Interactive menu with 4 stop methods
+
+# ⚡ Non-Interactive Deployment (for automation)
+./start-services.sh --mode=full        # Full startup with cleanup
+./start-services.sh --mode=quick       # Quick restart (no cleanup)
+./start-services.sh --mode=backend     # Backend + Jupyter only
+./start-services.sh --mode=custom --skip-cleanup --no-frontend  # Custom flags
 ./start-services.sh --help             # See all options
+
+# 🛑 Non-Interactive Shutdown
+./stop-services.sh --mode=standard     # Standard stop with cleanup
+./stop-services.sh --mode=quick        # Quick pause (no cleanup)
+./stop-services.sh --mode=deep         # Deep cleanup (remove containers)
+./stop-services.sh --mode=nuclear      # Nuclear reset ⚠️ DELETES ALL DATA
+./stop-services.sh --help              # See all options
 
 # Manual: Individual services
 docker compose up qdrant backend jupyter frontend -d
 
 # Development: Backend + Qdrant only
 docker compose up qdrant backend -d
-
-# Shutdown options
-./stop-services.sh                     # Safe stop with cleanup
-./stop-services.sh --skip-cleanup      # Quick stop without cleanup
-./stop-services.sh --remove            # Remove containers (keep data)
-./stop-services.sh --clean             # Full cleanup ⚠️
-./stop-services.sh --help              # See all options
 ```
 
 
@@ -482,14 +532,17 @@ docker compose up --scale backend=3 -d
 export QDRANT_URL=http://your-qdrant-cluster:6333
 ./start-services.sh
 
-# 🧹 Docker disk space management
-# Default behavior: Automatic cleanup of dangling images/cache
-./start-services.sh              # Cleans before starting
-./stop-services.sh               # Cleans after stopping
+# 🧹 Docker disk space management with interactive menus
+./start-services.sh              # Interactive menu: choose Full (with cleanup) or Quick (no cleanup)
+./stop-services.sh               # Interactive menu: 4 cleanup levels
 
-# Skip cleanup for faster operations (development)
-./start-services.sh --skip-cleanup
-./stop-services.sh --skip-cleanup
+# Non-interactive cleanup options
+./start-services.sh --mode=full        # Cleans before starting
+./start-services.sh --mode=quick       # Skip cleanup (faster)
+./stop-services.sh --mode=standard     # Cleans dangling images/cache
+./stop-services.sh --mode=quick        # No cleanup (fastest)
+./stop-services.sh --mode=deep         # Aggressive cleanup
+./stop-services.sh --mode=nuclear      # Full cleanup ⚠️ DELETES ALL DATA
 
 # Manual cleanup if needed
 docker system prune -f           # Remove unused images/containers
