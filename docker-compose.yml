@@ -1,147 +1,336 @@
+# ============================================================================
+# STUDENT LOAN RAG APPLICATION - DOCKER COMPOSE CONFIGURATION
+# ============================================================================
+#
+# 📋 SUMMARY:
+# This file orchestrates a 4-service RAG application for student loan assistance:
+# - Qdrant: Vector database storing document embeddings
+# - Backend: Python FastAPI serving RAG queries with agent tools
+# - Jupyter: Notebook server for development and analysis
+# - Frontend: Next.js web interface for user interaction
+#
+# 🔄 STARTUP FLOW:
+# 1. Qdrant starts → Health check passes
+# 2. Backend starts → Loads hybrid dataset → Health check passes
+# 3. Jupyter starts (parallel with frontend)
+# 4. Frontend starts → Connects to backend
+#
+# 🌐 ACCESS POINTS:
+# - Frontend:        http://localhost:3000
+# - Backend API:     http://localhost:8000/docs
+# - Jupyter Lab:     http://localhost:8888
+# - Qdrant Dashboard: http://localhost:6333/dashboard
+#
+# ============================================================================
+
+# Project name - prefixes all containers, volumes, and networks
+# Override with COMPOSE_PROJECT_NAME in .env file
 name: ${COMPOSE_PROJECT_NAME:-student-loan-rag}
 
 services:
-  # Vector Database - Foundation Layer
+  # ============================================================================
+  # SERVICE 1: QDRANT - Vector Database
+  # ============================================================================
+  # PURPOSE: Stores and searches document embeddings for RAG retrieval
+  # DATASET: 2,172 chunks (PDF: 615 + CSV: 1,557) from hybrid dataset
+  # MEMORY: ~39.2 MB for embeddings + metadata
+  # ACCESS: http://localhost:6333/dashboard
+  # ============================================================================
   qdrant:
+    # Docker image to use - pulls from Docker Hub, uses .env override or defaults to latest
     image: ${QDRANT_IMAGE:-qdrant/qdrant:latest}
+
+    # Container name - what you'll see in "docker ps", uses .env override or default
     container_name: ${QDRANT_CONTAINER_NAME:-student-loan-qdrant}
+
+    # Port mapping: "your_machine_port:container_port" - exposes services to localhost
     ports:
-      - "6333:6333"  # REST API
-      - "6334:6334"  # gRPC API (optional)
+      - "6333:6333"  # REST API - Use this for queries, inserts, dashboard access
+      - "6334:6334"  # gRPC API - Faster binary protocol for high-performance operations
+
+    # Volume mounting: connects persistent storage to container's data directory
     volumes:
-      - qdrant_storage:/qdrant/storage
+      - qdrant_storage:/qdrant/storage  # Data persists even if container is deleted
+
+    # Environment variables configure Qdrant's behavior (__ = nested config path)
     environment:
-      - QDRANT__SERVICE__HTTP_PORT=6333
-      - QDRANT__SERVICE__GRPC_PORT=6334
-      - QDRANT__LOG_LEVEL=INFO
+      - QDRANT__SERVICE__HTTP_PORT=6333  # Internal port for REST API
+      - QDRANT__SERVICE__GRPC_PORT=6334  # Internal port for gRPC API
+      - QDRANT__LOG_LEVEL=INFO          # How verbose logs are: DEBUG/INFO/WARN/ERROR
+
+    # Restart policy: auto-restart on crashes, but respect manual stops (docker stop)
     restart: unless-stopped
+
+    # Health check: verifies service is actually ready, not just running
     healthcheck:
+      # Test: tries opening TCP connection to port 6333, fails if can't connect in 3s
       test: ["CMD-SHELL", "timeout 3 bash -c '</dev/tcp/localhost/6333' || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      interval: 30s       # How often to run the health check
+      timeout: 10s        # Max time to wait for health check to complete
+      retries: 3          # Consecutive failures needed before marking "unhealthy"
+      start_period: 10s   # Grace period after startup - don't check immediately
+
+    # Network: which Docker network this container joins (for inter-service communication)
     networks:
       - student-loan-network
 
-  # Backend API - RAG + Evaluation Layer
+  # ============================================================================
+  # SERVICE 2: BACKEND - FastAPI RAG Server
+  # ============================================================================
+  # PURPOSE: Serves RAG queries with LangGraph agents and evaluation tools
+  # FEATURES: 4 retrieval methods, external search tools, RAGAS evaluation
+  # STARTUP: 60-90 seconds (loads hybrid dataset + initializes agents)
+  # ACCESS: http://localhost:8000/docs (API documentation)
+  # ============================================================================
   backend:
+    # Build configuration: tells Docker how to build this custom image
     build:
-      context: .
-      dockerfile: src/backend/Dockerfile
-      target: backend
+      context: .                           # Build starts from project root directory
+      dockerfile: src/backend/Dockerfile   # Path to Dockerfile instructions
+      target: backend                      # Which build stage to use (multi-stage builds)
+
+    # Resulting image name after build (can tag versions, uses .env override or default)
     image: ${BACKEND_IMAGE_NAME:-student-loan-backend}
+
+    # Container name for this instance
     container_name: ${BACKEND_CONTAINER_NAME:-student-loan-backend}
+
+    # Port mapping: expose FastAPI server to your machine
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Access API at http://localhost:8000
+
+    # Volume mounts: connect host directories to container paths
     volumes:
-      - ./src:/app/src  # Mount source code for development
-      - ./data:/app/data:ro  # Mount data directory as read-only
-      - ./cache:/app/cache  # Mount cache directory
-      - ./notebooks:/app/notebooks  # Mount Jupyter notebooks
-      - ./golden-masters:/app/golden-masters  # Mount golden datasets
-      - ./metrics:/app/metrics  # Mount evaluation metrics
-      - backend_cache:/app/.cache  # Persistent Python cache
+      # Bind mount (./host:container) - changes on host immediately visible in container
+      - ./src:/app/src                    # Hot reload: code changes work without rebuild
+      - ./data:/app/data:ro               # :ro = read-only mount (protects source data)
+      - ./cache:/app/cache                # Joblib cache for expensive RAGAS evaluations
+      - ./notebooks:/app/notebooks        # Shared workspace with Jupyter
+      - ./golden-masters:/app/golden-masters  # RAGAS synthetic test datasets
+      - ./metrics:/app/metrics            # Evaluation results output directory
+      # Named volume (volume_name:container) - managed by Docker, survives container removal
+      - backend_cache:/app/.cache         # Python pip/uv package cache for faster installs
+
+    # Environment variables: configuration passed into the container
     environment:
-      - QDRANT_URL=http://qdrant:6333  # Internal Docker network
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - COHERE_API_KEY=${COHERE_API_KEY}
-      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      # Vector DB connection: uses Docker network name "qdrant" (not localhost!)
+      - QDRANT_URL=http://qdrant:6333
+
+      # Required API keys: pulls from .env file on your machine
+      - OPENAI_API_KEY=${OPENAI_API_KEY}      # For GPT-4 and embeddings
+      - COHERE_API_KEY=${COHERE_API_KEY}      # For rerank-v3.5 compression
+      - TAVILY_API_KEY=${TAVILY_API_KEY}      # For web search tools
+
+      # Optional LangSmith observability: defaults to disabled if not in .env
       - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
       - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-false}
       - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-student-loan-rag}
-      - PYTHONPATH=/app
-      - PYTHONUNBUFFERED=1
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - BACKEND_HOST=0.0.0.0
-      - BACKEND_PORT=8000
+
+      # Python runtime configuration
+      - PYTHONPATH=/app                   # Adds /app to Python import path
+      - PYTHONUNBUFFERED=1                # Disable output buffering for real-time logs
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}      # Logging verbosity
+
+      # FastAPI server configuration
+      - BACKEND_HOST=0.0.0.0              # Listen on all network interfaces
+      - BACKEND_PORT=8000                 # Internal container port
+
+    # Service dependencies: control startup order
     depends_on:
       qdrant:
-        condition: service_healthy
+        condition: service_healthy  # Don't start until Qdrant's health check passes
+
+    # Restart policy
     restart: unless-stopped
+
+    # Health check: verifies API is responding correctly
     healthcheck:
+      # Test: curl the /health endpoint, fail if non-200 response
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      interval: 30s       # Check every 30 seconds
+      timeout: 10s        # Fail if curl hangs
+      retries: 3          # Allow 3 failures before "unhealthy"
+      start_period: 60s   # Wait 60s after start before first check (RAG init time)
+
+    # Network membership
     networks:
       - student-loan-network
 
-  # Jupyter Notebook Server - Development & Analysis Layer
+  # ============================================================================
+  # SERVICE 3: JUPYTER - Interactive Development Environment
+  # ============================================================================
+  # PURPOSE: Notebook-based development, experimentation, and analysis
+  # FEATURES: Same environment as backend for consistent testing
+  # SECURITY: No password/token (local development only - DO NOT expose publicly)
+  # ACCESS: http://localhost:8888 (no authentication required)
+  # ============================================================================
   jupyter:
+    # Build configuration: uses same Dockerfile as backend but different stage
     build:
       context: .
-      dockerfile: src/backend/Dockerfile
-      target: jupyter
+      dockerfile: src/backend/Dockerfile  # Reuses backend Dockerfile
+      target: jupyter                     # Different build stage with Jupyter installed
+
+    # Image name after build
     image: ${JUPYTER_IMAGE_NAME:-student-loan-jupyter}
+
+    # Container name
     container_name: ${JUPYTER_CONTAINER_NAME:-student-loan-jupyter}
+
+    # Port mapping: access Jupyter Lab in your browser
     ports:
-      - "8888:8888"
+      - "8888:8888"  # Visit http://localhost:8888
+
+    # Volume mounts: same as backend to ensure identical file access
     volumes:
-      - ./src:/app/src
-      - ./data:/app/data:ro
-      - ./cache:/app/cache
-      - ./notebooks:/app/notebooks
-      - ./golden-masters:/app/golden-masters
-      - ./metrics:/app/metrics
-      - jupyter_data:/app/.jupyter
-      - backend_cache:/app/.cache
+      # Bind mounts - changes on your machine instantly visible in Jupyter
+      - ./src:/app/src                    # Access all source code
+      - ./data:/app/data:ro               # Read-only access to raw data
+      - ./cache:/app/cache                # Shared evaluation cache
+      - ./notebooks:/app/notebooks        # Where .ipynb files are stored/edited
+      - ./golden-masters:/app/golden-masters  # RAGAS test datasets
+      - ./metrics:/app/metrics            # Save evaluation results here
+      # Named volumes - persistent across container rebuilds
+      - jupyter_data:/app/.jupyter        # Jupyter settings and extensions
+      - backend_cache:/app/.cache         # Shares Python package cache with backend
+
+    # Environment variables: identical to backend for reproducibility
     environment:
+      # Database connection
       - QDRANT_URL=http://qdrant:6333
+
+      # API keys
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - COHERE_API_KEY=${COHERE_API_KEY}
       - TAVILY_API_KEY=${TAVILY_API_KEY}
+
+      # LangSmith tracing (optional)
       - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
       - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-false}
       - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-student-loan-rag}
+
+      # Python configuration
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
-      - JUPYTER_ENABLE_LAB=yes
-      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-}
+
+      # Jupyter-specific settings
+      - JUPYTER_ENABLE_LAB=yes            # Use modern Jupyter Lab (not classic notebook)
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-}  # Empty = no login required (local dev only!)
+
+    # Dependencies: wait for Qdrant since notebooks will query vector DB
     depends_on:
       qdrant:
         condition: service_healthy
+
+    # Restart policy
     restart: unless-stopped
-    command: ["uv", "run", "jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root", "--NotebookApp.token=''", "--NotebookApp.password=''"]
+
+    # Override default container command: launches Jupyter Lab with specific settings
+    command:
+      - "uv"              # Use uv package manager to run Jupyter
+      - "run"             # Run command in uv environment
+      - "jupyter"         # Jupyter executable
+      - "lab"             # Lab interface (not classic notebook)
+      - "--ip=0.0.0.0"    # Listen on all network interfaces (not just localhost)
+      - "--port=8888"     # Internal port to bind to
+      - "--no-browser"    # Don't try to open browser (we're in Docker)
+      - "--allow-root"    # Allow running as root user (Docker containers run as root)
+      - "--NotebookApp.token=''"    # No token required for access
+      - "--NotebookApp.password=''" # No password required for access
+
+    # Network membership
     networks:
       - student-loan-network
 
-  # Frontend - Dashboard Layer (Optional for Demo/Analysis)
+  # ============================================================================
+  # SERVICE 4: FRONTEND - Next.js Web Interface
+  # ============================================================================
+  # PURPOSE: User-facing chat interface with persona-based interactions
+  # FEATURES: Multi-persona support, streaming responses, performance metrics
+  # BUILD: Production-optimized Next.js with security best practices
+  # ACCESS: http://localhost:3000
+  # ============================================================================
   frontend:
+    # Build configuration: separate from backend (different tech stack)
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: ./frontend       # Build from frontend/ subdirectory
+      dockerfile: Dockerfile    # Uses frontend/Dockerfile (not backend's)
+
+    # Image name after build
     image: ${FRONTEND_IMAGE_NAME:-student-loan-frontend}
+
+    # Container name
     container_name: ${FRONTEND_CONTAINER_NAME:-student-loan-frontend}
+
+    # Port mapping: access web UI in browser
     ports:
-      - "3000:3000"
+      - "3000:3000"  # Visit http://localhost:3000
+
+    # Environment variables: configure Next.js app
     environment:
-      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000  # External access for browser
-      - NEXT_PUBLIC_DEPLOYMENT_ENV=docker
-      - NODE_ENV=production
+      # NEXT_PUBLIC_ prefix = available in browser JavaScript (not secrets!)
+      # Uses localhost:8000 because browser runs on your machine, not in Docker network
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+      - NEXT_PUBLIC_DEPLOYMENT_ENV=docker  # App knows it's running in Docker
+
+      # NODE_ENV controls Next.js optimization level
+      - NODE_ENV=production  # Enables minification, optimizations, etc.
+
+    # Dependencies: wait for backend API to be healthy before starting
     depends_on:
       backend:
-        condition: service_healthy
+        condition: service_healthy  # Backend must pass health check first
+
+    # Restart policy
     restart: unless-stopped
+
+    # Health check: verifies Next.js server is responding to requests
     healthcheck:
+      # Test: curl the homepage, expect 200 OK
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 45s
+      interval: 30s       # Check every 30 seconds
+      timeout: 10s        # Fail if request hangs
+      retries: 3          # Allow 3 failures before "unhealthy"
+      start_period: 45s   # Wait 45s for Next.js to build and start
+
+    # Network membership
     networks:
       - student-loan-network
 
+# ============================================================================
+# PERSISTENT VOLUMES
+# ============================================================================
+# Named volumes persist data even when containers are deleted
+# Managed by Docker (stored in /var/lib/docker/volumes/ on host)
+# Benefits: faster than bind mounts, easy backup/restore, OS-agnostic paths
+# ============================================================================
 volumes:
+  # Vector database storage: embeddings, indexes, and metadata
   qdrant_storage:
-    driver: local
-  backend_cache:
-    driver: local
-  jupyter_data:
-    driver: local
+    driver: local  # Stored on local disk (can use other drivers for cloud storage)
 
+  # Python package cache: pip/uv downloads, compiled wheels
+  backend_cache:
+    driver: local  # Shared between backend and Jupyter for consistency
+
+  # Jupyter configuration: user settings, installed extensions, kernels
+  jupyter_data:
+    driver: local  # Preserves your Jupyter customizations across rebuilds
+
+# ============================================================================
+# NETWORK CONFIGURATION
+# ============================================================================
+# Creates isolated network for service-to-service communication
+# Services use container names as DNS (e.g., "qdrant" resolves to Qdrant's IP)
+# External requests use localhost:port (e.g., localhost:8000 for backend)
+# ============================================================================
 networks:
   student-loan-network:
+    # Bridge driver: default for single-host networking
+    # - Creates virtual network interface on host
+    # - Containers can talk to each other using service names
+    # - Isolated from other Docker networks
     driver: bridge
+
+    # Explicit network name (instead of auto-generated prefix)
     name: student-loan-network
