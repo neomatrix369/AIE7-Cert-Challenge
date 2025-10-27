@@ -1,33 +1,78 @@
-# ⚠️  LEGACY: Use root-level docker-compose.yml and ./start-services.sh instead
-# This file is kept for backward compatibility only
+# ============================================================================
+# LEGACY BACKEND-ONLY DOCKER COMPOSE
+# ============================================================================
+# ⚠️  DEPRECATED: Use root-level docker-compose.yml and ./start-services.sh instead
+#
+# This file is kept for backward compatibility only.
+# Use this ONLY if you need to run backend in isolation (without Qdrant/Jupyter).
+#
+# RECOMMENDED: cd ../.. && ./start-services.sh (runs full stack with dependencies)
+#
+# LIMITATIONS OF THIS FILE:
+# - No Qdrant vector database (RAG won't work!)
+# - No Jupyter notebooks for development
+# - No frontend UI
+# - Must manually manage .env file location
+# ============================================================================
+
+# Docker Compose version - v3.8 has good feature coverage
 version: '3.8'
 
 services:
   rag-api:
-    build: 
-      context: ../../  # Build from project root to access src/ modules
-      dockerfile: src/backend/Dockerfile
+    # Build configuration: creates backend API container
+    build:
+      context: ../../                      # Build from project root (2 levels up)
+      dockerfile: src/backend/Dockerfile   # Path relative to context
+
+    # Port mapping: expose FastAPI server to your machine
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Access at http://localhost:8000/docs
+
+    # Load environment variables from .env file (not inline)
     env_file:
-      - ../../.env  # Load from project root .env (relative to docker-compose.yml location)
+      - ../../.env  # Path to .env relative to this docker-compose.yml file
+                    # ⚠️  Make sure .env exists at project root with API keys!
+
+    # Volume mounts: connect host directories to container
     volumes:
-      - ../../src:/app/src  # Mount source code for live development
-      - ../../data:/app/data:ro  # Mount data directory as read-only
-      - cache_volume:/app/cache  # Persistent cache
+      # Bind mounts - changes on host immediately visible in container
+      - ../../src:/app/src           # Hot reload: code changes work without rebuild
+      - ../../data:/app/data:ro      # :ro = read-only (protects source data)
+
+      # Named volume - managed by Docker, persists across container removals
+      - cache_volume:/app/cache      # Joblib cache for RAGAS evaluations
+
+    # Restart policy: auto-restart on crashes
     restart: unless-stopped
+
+    # Health check: verifies API is responding correctly
     healthcheck:
+      # Test: curl the /health endpoint, expect 200 OK
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      interval: 30s       # Check every 30 seconds
+      timeout: 10s        # Fail if curl hangs
+      retries: 3          # Allow 3 consecutive failures before "unhealthy"
+      start_period: 60s   # Wait 60s after start (RAG agent initialization time)
+
+    # Network: join Docker network for inter-service communication
     networks:
       - student-loan-network
 
+# ============================================================================
+# PERSISTENT VOLUMES
+# ============================================================================
 volumes:
+  # Named volume for cache persistence
   cache_volume:
+    # driver not specified = defaults to "local" (stored on host disk)
 
+# ============================================================================
+# NETWORK CONFIGURATION
+# ============================================================================
 networks:
   student-loan-network:
+    # Bridge driver: enables container-to-container communication
+    # - Containers can reference each other by service name
+    # - Isolated from other Docker networks
     driver: bridge

@@ -1,24 +1,50 @@
-# ⚠️  LEGACY: Use root-level docker-compose.yml and ./start-services.sh instead
-# This file is kept for backward compatibility only
+# ============================================================================
+# LEGACY FRONTEND-ONLY DOCKER COMPOSE
+# ============================================================================
+# ⚠️  DEPRECATED: Use root-level docker-compose.yml and ./start-services.sh instead
+#
+# This file is kept for backward compatibility only.
+# Use this ONLY if you need to run frontend in isolation for development.
+#
+# RECOMMENDED: cd ../.. && ./start-services.sh (runs full stack)
+# ============================================================================
+
+# Docker Compose version - v3.8 has good feature coverage
 version: '3.8'
 
 services:
   frontend:
+    # Build configuration: creates Next.js development container
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: .             # Build from frontend/ directory
+      dockerfile: Dockerfile # Uses local Dockerfile
+
+    # Port mapping: expose Next.js dev server to your machine
     ports:
-      - "3000:3000"
+      - "3000:3000"  # Access at http://localhost:3000
+
+    # Volume mounts: enable hot reload during development
     volumes:
-      - .:/app
-      - /app/node_modules
+      - .:/app                # Bind mount entire frontend directory
+      - /app/node_modules     # Exclude node_modules (use container's version)
+
+    # Restart policy: auto-restart on crashes
     restart: unless-stopped
-    command: npm run dev
+
+    # Override default command: run Next.js in development mode
+    command: npm run dev  # Hot reload enabled, not optimized production build
+
+    # Health check: verifies Next.js dev server is responding
     healthcheck:
+      # Test: curl homepage, expect 200 OK
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      interval: 30s       # Check every 30 seconds
+      timeout: 10s        # Fail if request hangs
+      retries: 3          # Allow 3 consecutive failures
+      start_period: 10s   # Wait 10s after start before checking
+
+    # Environment variables: configure Next.js app
     environment:
+      # Backend API URL - expects backend running separately with "rag-api" hostname
+      # ⚠️  This won't work unless backend is running in same Docker network
       - BACKEND_URL=http://rag-api:8000
